@@ -149,7 +149,8 @@ export default function Call2() {
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Curso</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Grupo</TableHead>
+                    <TableHead>Grupo Origen</TableHead>
+                    <TableHead>Grupo Destino</TableHead>
                     <TableHead className="w-24">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -108,6 +108,15 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
             {statusLabels[localStatus as keyof typeof statusLabels]}
           </Badge>
         </TableCell>
+        {type === 'call2' && (
+          <TableCell>
+            {record.origin_group ? (
+              <Badge variant="outline">{GROUP_LABELS[record.origin_group]}</Badge>
+            ) : (
+              <span className="text-muted-foreground text-sm">—</span>
+            )}
+          </TableCell>
+        )}
         <TableCell>
           {localGroup ? (
             <Badge variant="secondary">{GROUP_LABELS[localGroup]}</Badge>
@@ -133,7 +142,7 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
       </TableRow>
       {isExpanded && (
         <TableRow className="bg-muted/30">
-          <TableCell colSpan={onToggleSelect ? 6 : 5} className="p-4">
+          <TableCell colSpan={onToggleSelect ? (type === 'call2' ? 7 : 6) : (type === 'call2' ? 6 : 5)} className="p-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Estado</label>
