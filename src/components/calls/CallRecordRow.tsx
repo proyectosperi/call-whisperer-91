@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Copy, Check, Phone, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Call1Status, Call2Status, GroupType } from '@/types/database';
 import { CALL1_STATUS_LABELS, CALL2_STATUS_LABELS, CALL1_STATUS_COLORS, CALL2_STATUS_COLORS, GROUP_LABELS } from '@/types/database';
 
-interface CallRecordRowProps {
+export interface CallRecordRowProps {
   type: 'call1' | 'call2';
   record: {
     id: string;
@@ -29,9 +30,11 @@ interface CallRecordRowProps {
     };
   };
   onUpdate: (id: string, updates: any) => Promise<void>;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function CallRecordRow({ type, record, onUpdate }: CallRecordRowProps) {
+export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect }: CallRecordRowProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -77,6 +80,11 @@ export function CallRecordRow({ type, record, onUpdate }: CallRecordRowProps) {
   return (
     <>
       <TableRow className="hover:bg-muted/50">
+        {onToggleSelect && (
+          <TableCell className="w-12">
+            <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
+          </TableCell>
+        )}
         <TableCell className="font-mono">
           <div className="flex items-center gap-2">
             <span className="text-sm">{record.contact.full_phone}</span>
@@ -125,7 +133,7 @@ export function CallRecordRow({ type, record, onUpdate }: CallRecordRowProps) {
       </TableRow>
       {isExpanded && (
         <TableRow className="bg-muted/30">
-          <TableCell colSpan={5} className="p-4">
+          <TableCell colSpan={onToggleSelect ? 6 : 5} className="p-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Estado</label>

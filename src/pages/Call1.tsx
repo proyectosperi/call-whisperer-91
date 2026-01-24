@@ -8,14 +8,37 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Search, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { BulkAssignDialog } from '@/components/admin/BulkAssignDialog';
+import { Search, Phone, Users } from 'lucide-react';
 import { CALL1_STATUS_LABELS, Call1Status } from '@/types/database';
-
 export default function Call1() {
   const { isAdmin } = useAuth();
-  const { records, isLoading, updateRecord } = useCall1Data();
+  const { records, isLoading, updateRecord, refetch } = useCall1Data();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === filteredRecords.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredRecords.map((r) => r.id));
+    }
+  };
+
+  const handleAssignSuccess = () => {
+    setSelectedIds([]);
+    refetch();
+  };
 
   const filteredRecords = records.filter((record) => {
     const matchesSearch =
@@ -51,13 +74,21 @@ export default function Call1() {
           </Badge>
         </div>
 
-        {/* Stats */}
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(statusCounts).map(([status, count]) => (
-            <Badge key={status} variant="outline" className="text-sm">
-              {CALL1_STATUS_LABELS[status as Call1Status]}: {count}
-            </Badge>
-          ))}
+        {/* Stats + Bulk Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(statusCounts).map(([status, count]) => (
+              <Badge key={status} variant="outline" className="text-sm">
+                {CALL1_STATUS_LABELS[status as Call1Status]}: {count}
+              </Badge>
+            ))}
+          </div>
+          {isAdmin && selectedIds.length > 0 && (
+            <Button onClick={() => setShowAssignDialog(true)} size="sm">
+              <Users className="h-4 w-4 mr-2" />
+              Asignar ({selectedIds.length})
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -106,6 +137,14 @@ export default function Call1() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {isAdmin && (
+                      <TableHead className="w-12">
+                        <Checkbox
+                          checked={selectedIds.length === filteredRecords.length && filteredRecords.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </TableHead>
+                    )}
                     <TableHead>Teléfono</TableHead>
                     <TableHead>Curso</TableHead>
                     <TableHead>Estado</TableHead>
@@ -120,6 +159,8 @@ export default function Call1() {
                       type="call1"
                       record={record}
                       onUpdate={updateRecord}
+                      selected={selectedIds.includes(record.id)}
+                      onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
                     />
                   ))}
                 </TableBody>
@@ -127,6 +168,15 @@ export default function Call1() {
             )}
           </CardContent>
         </Card>
+
+        {/* Bulk Assign Dialog */}
+        <BulkAssignDialog
+          open={showAssignDialog}
+          onOpenChange={setShowAssignDialog}
+          selectedIds={selectedIds}
+          callType="call1"
+          onSuccess={handleAssignSuccess}
+        />
       </div>
     </AppLayout>
   );
