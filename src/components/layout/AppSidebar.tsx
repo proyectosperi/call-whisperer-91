@@ -23,6 +23,7 @@ import {
   BookOpen,
   Upload,
   BarChart3,
+  FileBarChart,
   LogOut,
   Scissors,
   Settings,
@@ -38,6 +39,7 @@ const adminNavItems = [
   { title: 'Países', url: '/countries', icon: Globe },
   { title: 'Importar', url: '/import', icon: Upload },
   { title: 'Métricas', url: '/metrics', icon: BarChart3 },
+  { title: 'Reportes', url: '/call-reports', icon: FileBarChart },
 ];
 
 const callerNavItems = [
