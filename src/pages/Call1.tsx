@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CallRecordRow } from '@/components/calls/CallRecordRow';
 import { useCall1Data } from '@/hooks/useCall1Data';
+import { useCourses } from '@/hooks/useCourses';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,8 +17,10 @@ import { CALL1_STATUS_LABELS, Call1Status } from '@/types/database';
 export default function Call1() {
   const { isAdmin } = useAuth();
   const { records, isLoading, updateRecord, refetch } = useCall1Data();
+  const { courses } = useCourses();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [courseFilter, setCourseFilter] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
@@ -45,7 +48,8 @@ export default function Call1() {
       record.contact.full_phone.includes(search) ||
       record.contact.course.code.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCourse = courseFilter === 'all' || record.contact.course.id === courseFilter;
+    return matchesSearch && matchesStatus && matchesCourse;
   });
 
   const statusCounts = records.reduce((acc, r) => {
@@ -107,6 +111,19 @@ export default function Call1() {
                   className="pl-10"
                 />
               </div>
+              <Select value={courseFilter} onValueChange={setCourseFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filtrar por curso" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los cursos</SelectItem>
+                  {courses.filter(c => c.is_active).map((course) => (
+                    <SelectItem key={course.id} value={course.id}>
+                      {course.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="Filtrar por estado" />
