@@ -144,7 +144,7 @@ export default function Courses() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="campaign_date">Fecha inicio campaña</Label>
+                  <Label htmlFor="campaign_date">Fecha Inicio</Label>
                   <Input
                     id="campaign_date"
                     type="date"
@@ -175,7 +175,7 @@ export default function Courses() {
                   <TableRow>
                     <TableHead>Código</TableHead>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Inicio Campaña</TableHead>
+                    <TableHead>Fecha Inicio</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead className="w-32">Acciones</TableHead>
                   </TableRow>

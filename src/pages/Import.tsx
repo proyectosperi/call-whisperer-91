@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Plus, FileText, AlertCircle, CheckCircle, FileSpreadsheet } from 'lucide-react';
+import { Upload, Plus, FileText, AlertCircle, CheckCircle, FileSpreadsheet, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GroupType } from '@/types/database';
 import { GROUP_LABELS } from '@/types/database';
@@ -20,6 +20,23 @@ interface ParsedContact {
   country_code: string;
   phone_number: string;
 }
+
+const downloadTemplate = () => {
+  const templateData = [
+    ['Código País', 'Número Teléfono'],
+    ['+51', '912345678'],
+    ['+51', '987654321'],
+    ['+52', '5512345678'],
+    ['+57', '3012345678'],
+    ['+56', '961234567'],
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(templateData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+  XLSX.writeFile(wb, 'plantilla_contactos.xlsx');
+  toast.success('Plantilla descargada');
+};
 
 export default function Import() {
   const { courses } = useCourses();
@@ -113,22 +130,51 @@ export default function Import() {
     const lines = bulkForm.numbers.split('\n').filter((line) => line.trim());
     let success = 0;
     let errors = 0;
+    const duplicates: string[] = [];
+
+    // Obtener contactos existentes para este curso
+    const { data: existingContacts } = await supabase
+      .from('contacts')
+      .select('country_code, phone_number')
+      .eq('course_id', bulkForm.course_id);
+
+    const existingPhones = new Set(
+      (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
+    );
 
     for (const line of lines) {
       try {
-        const parts = line.trim().split(/[\t,;]/);
+        // Extraer código de país y número del formato +XX XXX XXX XXX
+        const cleanLine = line.trim();
+        const match = cleanLine.match(/^(\+\d{1,3})\s*(.+)$/);
+        
         let countryCode = '+51';
         let phoneNumber = '';
 
-        if (parts.length >= 2) {
-          countryCode = parts[0].trim();
-          phoneNumber = parts[1].trim();
+        if (match) {
+          countryCode = match[1];
+          phoneNumber = match[2].replace(/\D/g, '');
         } else {
-          phoneNumber = parts[0].trim();
+          // Intentar parsear con delimitadores tradicionales
+          const parts = cleanLine.split(/[\t,;]/);
+          if (parts.length >= 2) {
+            countryCode = parts[0].trim();
+            phoneNumber = parts[1].trim().replace(/\D/g, '');
+          } else {
+            phoneNumber = cleanLine.replace(/\D/g, '');
+          }
         }
 
-        phoneNumber = phoneNumber.replace(/\D/g, '');
-        if (!phoneNumber) continue;
+        if (!phoneNumber || phoneNumber.length < 7) continue;
+
+        // Verificar duplicados
+        const fullPhone = `${countryCode}${phoneNumber}`;
+        if (existingPhones.has(fullPhone)) {
+          duplicates.push(fullPhone);
+          errors++;
+          continue;
+        }
+        existingPhones.add(fullPhone);
 
         const { data: contact, error: contactError } = await supabase
           .from('contacts')
@@ -170,7 +216,10 @@ export default function Import() {
       setBulkForm({ ...bulkForm, numbers: '' });
     }
     if (errors > 0) {
-      toast.error(`${errors} errores durante la importación`);
+      const msg = duplicates.length > 0 
+        ? `${errors} errores (${duplicates.length} duplicados)`
+        : `${errors} errores durante la importación`;
+      toast.error(msg);
     }
 
     setIsImporting(false);
@@ -192,12 +241,14 @@ export default function Import() {
         const jsonData = XLSX.utils.sheet_to_json<Record<string, any>>(worksheet, { header: 1 });
 
         const contacts: ParsedContact[] = [];
+        const seen = new Set<string>();
         
         // Skip header row if it looks like a header
         const startRow = jsonData.length > 0 && 
           typeof jsonData[0]?.[0] === 'string' && 
           (jsonData[0][0].toLowerCase().includes('codigo') || 
            jsonData[0][0].toLowerCase().includes('phone') ||
+           jsonData[0][0].toLowerCase().includes('pais') ||
            jsonData[0][0].toLowerCase().includes('telefono')) ? 1 : 0;
 
         for (let i = startRow; i < jsonData.length; i++) {
@@ -219,17 +270,28 @@ export default function Import() {
               phoneNumber = col1.replace(/\D/g, '');
             }
           } else {
-            // Single column: just phone number
-            phoneNumber = String(row[0] || '').replace(/\D/g, '');
+            // Single column: could be full phone with code or just number
+            const col1 = String(row[0] || '').trim();
+            const match = col1.match(/^(\+\d{1,3})\s*(.+)$/);
+            if (match) {
+              countryCode = match[1];
+              phoneNumber = match[2].replace(/\D/g, '');
+            } else {
+              phoneNumber = col1.replace(/\D/g, '');
+            }
           }
 
           if (phoneNumber && phoneNumber.length >= 7) {
-            contacts.push({ country_code: countryCode, phone_number: phoneNumber });
+            const fullPhone = `${countryCode}${phoneNumber}`;
+            if (!seen.has(fullPhone)) {
+              seen.add(fullPhone);
+              contacts.push({ country_code: countryCode, phone_number: phoneNumber });
+            }
           }
         }
 
         setParsedContacts(contacts);
-        toast.success(`${contacts.length} contactos encontrados en el archivo`);
+        toast.success(`${contacts.length} contactos únicos encontrados en el archivo`);
       } catch (error) {
         console.error('Error parsing file:', error);
         toast.error('Error al leer el archivo. Asegúrate de que sea un archivo Excel o CSV válido.');
@@ -264,9 +326,29 @@ export default function Import() {
 
     let success = 0;
     let errors = 0;
+    const duplicates: string[] = [];
+
+    // Obtener contactos existentes para este curso
+    const { data: existingContacts } = await supabase
+      .from('contacts')
+      .select('country_code, phone_number')
+      .eq('course_id', fileForm.course_id);
+
+    const existingPhones = new Set(
+      (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
+    );
 
     for (const contact of parsedContacts) {
       try {
+        // Verificar duplicados
+        const fullPhone = `${contact.country_code}${contact.phone_number}`;
+        if (existingPhones.has(fullPhone)) {
+          duplicates.push(fullPhone);
+          errors++;
+          continue;
+        }
+        existingPhones.add(fullPhone);
+
         const { data: newContact, error: contactError } = await supabase
           .from('contacts')
           .insert({
@@ -311,7 +393,10 @@ export default function Import() {
       }
     }
     if (errors > 0) {
-      toast.error(`${errors} errores durante la importación`);
+      const msg = duplicates.length > 0 
+        ? `${errors} errores (${duplicates.length} duplicados en este curso)`
+        : `${errors} errores durante la importación`;
+      toast.error(msg);
     }
 
     setIsImporting(false);
@@ -358,10 +443,18 @@ export default function Import() {
           <TabsContent value="file">
             <Card>
               <CardHeader>
-                <CardTitle>Importar desde Archivo</CardTitle>
-                <CardDescription>
-                  Sube un archivo Excel (.xlsx, .xls) o CSV con los números de teléfono
-                </CardDescription>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Importar desde Archivo</CardTitle>
+                    <CardDescription>
+                      Sube un archivo Excel (.xlsx, .xls) o CSV con los números de teléfono
+                    </CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={downloadTemplate}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Descargar Plantilla
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-3">
@@ -658,12 +751,12 @@ export default function Import() {
                     <Textarea
                       value={bulkForm.numbers}
                       onChange={(e) => setBulkForm({ ...bulkForm, numbers: e.target.value })}
-                      placeholder={`+51\t999888777\n+52\t5512345678\n987654321`}
+                      placeholder={`+51 912 345 678\n+52 1 55 1234 5678\n+57 301 234 5678\n+56 9 6123 4567`}
                       rows={10}
                       className="font-mono"
                     />
                     <p className="text-sm text-muted-foreground">
-                      Puedes pegar directamente desde Excel. Formato: código_país[tab/coma]número o solo número (usará +51)
+                      Acepta números con espacios. Formatos válidos: "+51 912 345 678", "+51\t912345678", o solo número (usará +51)
                     </p>
                   </div>
                   {importResult && (
