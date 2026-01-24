@@ -679,10 +679,6 @@ export default function Import() {
               Individual
             </TabsTrigger>
           </TabsList>
-              <FileText className="h-4 w-4" />
-              Texto Masivo
-            </TabsTrigger>
-          </TabsList>
 
           {/* File Import */}
           <TabsContent value="file">
