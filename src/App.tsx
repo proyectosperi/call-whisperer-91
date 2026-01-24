@@ -10,6 +10,7 @@ import Call1 from "./pages/Call1";
 import Call2 from "./pages/Call2";
 import Contacts from "./pages/Contacts";
 import Courses from "./pages/Courses";
+import MyCourses from "./pages/MyCourses";
 import Import from "./pages/Import";
 import Metrics from "./pages/Metrics";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/call2" element={<Call2 />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/courses" element={<Courses />} />
+            <Route path="/my-courses" element={<MyCourses />} />
             <Route path="/import" element={<Import />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="*" element={<NotFound />} />
