@@ -3,10 +3,12 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { useCall1Data } from '@/hooks/useCall1Data';
 import { useCall2Data } from '@/hooks/useCall2Data';
 import { useCallers } from '@/hooks/useCallers';
+import { useCourses } from '@/hooks/useCourses';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon, Users, Phone } from 'lucide-react';
 import { CALL1_STATUS_LABELS, CALL2_STATUS_LABELS } from '@/types/database';
@@ -16,9 +18,20 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'
 
 export default function CallReports() {
   const [activeTab, setActiveTab] = useState('call1');
-  const { records: call1Records, isLoading: isLoadingCall1 } = useCall1Data();
-  const { records: call2Records, isLoading: isLoadingCall2 } = useCall2Data();
+  const [selectedCourse, setSelectedCourse] = useState<string>('all');
+  const { records: call1RecordsAll, isLoading: isLoadingCall1 } = useCall1Data();
+  const { records: call2RecordsAll, isLoading: isLoadingCall2 } = useCall2Data();
   const { callers } = useCallers();
+  const { courses } = useCourses();
+
+  // Filtrar por curso
+  const call1Records = selectedCourse === 'all' 
+    ? call1RecordsAll 
+    : call1RecordsAll.filter(r => r.contact.course.id === selectedCourse);
+  
+  const call2Records = selectedCourse === 'all' 
+    ? call2RecordsAll 
+    : call2RecordsAll.filter(r => r.contact.course.id === selectedCourse);
 
   // ============ MÉTRICAS LLAMADA 1 ============
   
@@ -164,14 +177,31 @@ export default function CallReports() {
     <AppLayout title="Reportes de Llamadas">
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            Reportes de Llamadas
-          </h1>
-          <p className="text-muted-foreground">
-            Análisis detallado de métricas por llamada
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              Reportes de Llamadas
+            </h1>
+            <p className="text-muted-foreground">
+              Análisis detallado de métricas por llamada
+            </p>
+          </div>
+          <div className="w-64">
+            <Select value={selectedCourse} onValueChange={setSelectedCourse}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por curso" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los cursos</SelectItem>
+                {courses.filter(c => c.is_active).map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.code} - {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
