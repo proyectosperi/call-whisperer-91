@@ -27,11 +27,11 @@ export default function CallReports() {
   // Filtrar por curso
   const call1Records = selectedCourse === 'all' 
     ? call1RecordsAll 
-    : call1RecordsAll.filter(r => r.contact.course.id === selectedCourse);
+    : call1RecordsAll.filter(r => r.contact?.course?.id === selectedCourse);
   
   const call2Records = selectedCourse === 'all' 
     ? call2RecordsAll 
-    : call2RecordsAll.filter(r => r.contact.course.id === selectedCourse);
+    : call2RecordsAll.filter(r => r.contact?.course?.id === selectedCourse);
 
   // ============ MÉTRICAS LLAMADA 1 ============
   
