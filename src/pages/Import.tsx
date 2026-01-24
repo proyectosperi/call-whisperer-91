@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Plus, FileText, AlertCircle, CheckCircle, FileSpreadsheet, Download } from 'lucide-react';
+import { Upload, Plus, FileText, AlertCircle, CheckCircle, FileSpreadsheet, Download, Code2, Terminal } from 'lucide-react';
 import { toast } from 'sonner';
 import type { GroupType } from '@/types/database';
 import { GROUP_LABELS } from '@/types/database';
 import * as XLSX from 'xlsx';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ParsedContact {
   country_code: string;
@@ -42,7 +43,26 @@ export default function Import() {
   const { courses } = useCourses();
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState<{ success: number; errors: number } | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString('es-PE');
+    setLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
+  };
+
+  const clearLogs = () => setLogs([]);
+
+  // Función helper para obtener country_id basándose en el código de país
+  const getCountryId = async (phoneCode: string): Promise<string | null> => {
+    const { data } = await supabase
+      .from('countries')
+      .select('id')
+      .eq('phone_code', phoneCode)
+      .single();
+    
+    return data?.id || null;
+  };
 
   // Single contact form
   const [singleForm, setSingleForm] = useState({
@@ -70,6 +90,54 @@ export default function Import() {
   const [parsedContacts, setParsedContacts] = useState<ParsedContact[]>([]);
   const [fileName, setFileName] = useState<string>('');
 
+  // HTML import form
+  const [htmlForm, setHtmlForm] = useState({
+    htmlContent: '',
+    course_id: '',
+    source_group: '' as GroupType | '',
+    call_type: 'call1' as 'call1' | 'call2',
+  });
+
+  // Función para extraer números de teléfono de HTML
+  const parsePhoneNumbersFromHTML = (html: string): ParsedContact[] => {
+    addLog('Iniciando análisis de HTML...');
+    
+    // Extraer el texto del HTML (eliminar tags)
+    const textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ');
+    
+    // Buscar todos los números de teléfono con formato +XX ...
+    const phoneRegex = /(\+\d{1,3})\s*([\d\s]+)/g;
+    const matches = [...textContent.matchAll(phoneRegex)];
+    
+    addLog(`Se encontraron ${matches.length} posibles números...`);
+    
+    const contacts: ParsedContact[] = [];
+    const seen = new Set<string>();
+    
+    matches.forEach((match, index) => {
+      const countryCode = match[1];
+      const numberPart = match[2].replace(/\D/g, '');
+      
+      // Validar que el número tenga al menos 7 dígitos
+      if (numberPart.length >= 7) {
+        const fullPhone = `${countryCode}${numberPart}`;
+        if (!seen.has(fullPhone)) {
+          seen.add(fullPhone);
+          contacts.push({
+            country_code: countryCode,
+            phone_number: numberPart,
+          });
+          if ((index + 1) % 20 === 0) {
+            addLog(`Procesados ${index + 1} números...`);
+          }
+        }
+      }
+    });
+    
+    addLog(`✓ ${contacts.length} números únicos extraídos del HTML`);
+    return contacts;
+  };
+
   const handleSingleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!singleForm.course_id || !singleForm.phone_number) {
@@ -79,11 +147,14 @@ export default function Import() {
 
     setIsImporting(true);
     try {
+      const countryId = await getCountryId(singleForm.country_code);
+      
       const { data: contact, error: contactError } = await supabase
         .from('contacts')
         .insert({
           country_code: singleForm.country_code,
           phone_number: singleForm.phone_number.replace(/\D/g, ''),
+          country_id: countryId,
           course_id: singleForm.course_id,
           source_group: singleForm.source_group || null,
         })
@@ -124,15 +195,21 @@ export default function Import() {
       return;
     }
 
+    clearLogs();
     setIsImporting(true);
     setImportResult(null);
 
+    addLog('Iniciando importación masiva por texto...');
+
     const lines = bulkForm.numbers.split('\n').filter((line) => line.trim());
+    addLog(`Se encontraron ${lines.length} líneas para procesar`);
+    
     let success = 0;
     let errors = 0;
     const duplicates: string[] = [];
 
     // Obtener contactos existentes para este curso
+    addLog('Consultando duplicados existentes...');
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('country_code, phone_number')
@@ -141,6 +218,8 @@ export default function Import() {
     const existingPhones = new Set(
       (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
     );
+
+    addLog(`${existingPhones.size} contactos ya registrados en este curso`);
 
     for (const line of lines) {
       try {
@@ -176,11 +255,14 @@ export default function Import() {
         }
         existingPhones.add(fullPhone);
 
+        const countryId = await getCountryId(countryCode);
+
         const { data: contact, error: contactError } = await supabase
           .from('contacts')
           .insert({
             country_code: countryCode,
             phone_number: phoneNumber,
+            country_id: countryId,
             course_id: bulkForm.course_id,
             source_group: bulkForm.source_group || null,
           })
@@ -208,7 +290,17 @@ export default function Import() {
       } catch {
         errors++;
       }
+
+      if ((success + errors) % 20 === 0) {
+        addLog(`Progreso: ${success + errors}/${lines.length} procesados...`);
+      }
     }
+
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    addLog(`✓ Importación completada`);
+    addLog(`   • Exitosos: ${success}`);
+    addLog(`   • Duplicados: ${duplicates.length}`);
+    addLog(`   • Errores: ${errors - duplicates.length}`);
 
     setImportResult({ success, errors });
     if (success > 0) {
@@ -321,14 +413,18 @@ export default function Import() {
       return;
     }
 
+    clearLogs();
     setIsImporting(true);
     setImportResult(null);
+
+    addLog(`Iniciando importación de ${parsedContacts.length} contactos...`);
 
     let success = 0;
     let errors = 0;
     const duplicates: string[] = [];
 
     // Obtener contactos existentes para este curso
+    addLog('Verificando duplicados...');
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('country_code, phone_number')
@@ -337,6 +433,8 @@ export default function Import() {
     const existingPhones = new Set(
       (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
     );
+
+    addLog(`${existingPhones.size} contactos ya registrados en este curso`);
 
     for (const contact of parsedContacts) {
       try {
@@ -349,11 +447,14 @@ export default function Import() {
         }
         existingPhones.add(fullPhone);
 
+        const countryId = await getCountryId(contact.country_code);
+
         const { data: newContact, error: contactError } = await supabase
           .from('contacts')
           .insert({
             country_code: contact.country_code,
             phone_number: contact.phone_number,
+            country_id: countryId,
             course_id: fileForm.course_id,
             source_group: fileForm.source_group || null,
           })
@@ -381,7 +482,17 @@ export default function Import() {
       } catch {
         errors++;
       }
+
+      if ((success + errors) % 50 === 0) {
+        addLog(`Progreso: ${success + errors}/${parsedContacts.length} procesados...`);
+      }
     }
+
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    addLog(`✓ Importación desde archivo completada`);
+    addLog(`   • Exitosos: ${success}`);
+    addLog(`   • Duplicados: ${duplicates.length}`);
+    addLog(`   • Errores: ${errors - duplicates.length}`);
 
     setImportResult({ success, errors });
     if (success > 0) {
@@ -397,6 +508,132 @@ export default function Import() {
         ? `${errors} errores (${duplicates.length} duplicados en este curso)`
         : `${errors} errores durante la importación`;
       toast.error(msg);
+    }
+
+    setIsImporting(false);
+  };
+
+  const handleHTMLImport = async () => {
+    if (!htmlForm.course_id) {
+      toast.error('Selecciona un curso');
+      return;
+    }
+
+    if (!htmlForm.htmlContent.trim()) {
+      toast.error('Pega el código HTML');
+      return;
+    }
+
+    clearLogs();
+    setIsImporting(true);
+    setImportResult(null);
+
+    addLog('Iniciando proceso de importación desde HTML...');
+
+    // Extraer números del HTML
+    const contacts = parsePhoneNumbersFromHTML(htmlForm.htmlContent);
+
+    if (contacts.length === 0) {
+      addLog('✗ No se encontraron números válidos en el HTML');
+      toast.error('No se encontraron números válidos');
+      setIsImporting(false);
+      return;
+    }
+
+    addLog(`Verificando duplicados en el curso...`);
+
+    // Obtener contactos existentes para este curso
+    const { data: existingContacts } = await supabase
+      .from('contacts')
+      .select('country_code, phone_number')
+      .eq('course_id', htmlForm.course_id);
+
+    const existingPhones = new Set(
+      (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
+    );
+
+    addLog(`${existingPhones.size} contactos ya registrados en este curso`);
+
+    let success = 0;
+    let errors = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < contacts.length; i++) {
+      const contact = contacts[i];
+      try {
+        // Verificar duplicados
+        const fullPhone = `${contact.country_code}${contact.phone_number}`;
+        if (existingPhones.has(fullPhone)) {
+          skipped++;
+          if (skipped <= 5) {
+            addLog(`⊘ Duplicado: ${fullPhone}`);
+          }
+          continue;
+        }
+        existingPhones.add(fullPhone);
+
+        const countryId = await getCountryId(contact.country_code);
+
+        const { data: newContact, error: contactError } = await supabase
+          .from('contacts')
+          .insert({
+            country_code: contact.country_code,
+            phone_number: contact.phone_number,
+            country_id: countryId,
+            course_id: htmlForm.course_id,
+            source_group: htmlForm.source_group || null,
+          })
+          .select()
+          .single();
+
+        if (contactError) {
+          errors++;
+          addLog(`✗ Error: ${fullPhone}`);
+          continue;
+        }
+
+        if (htmlForm.call_type === 'call1') {
+          await supabase.from('call1_records').insert({
+            contact_id: newContact.id,
+            target_group: htmlForm.source_group || null,
+          });
+        } else {
+          await supabase.from('call2_records').insert({
+            contact_id: newContact.id,
+            origin_group: htmlForm.source_group || null,
+          });
+        }
+
+        success++;
+        if (success <= 10 || (success % 10 === 0)) {
+          addLog(`✓ Importado: ${fullPhone} (${success}/${contacts.length})`);
+        }
+      } catch {
+        errors++;
+      }
+    }
+
+    if (skipped > 5) {
+      addLog(`... y ${skipped - 5} duplicados más`);
+    }
+
+    addLog(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    addLog(`✓ Proceso completado`);
+    addLog(`   • Exitosos: ${success}`);
+    addLog(`   • Duplicados: ${skipped}`);
+    addLog(`   • Errores: ${errors}`);
+
+    setImportResult({ success, errors: errors + skipped });
+    
+    if (success > 0) {
+      toast.success(`${success} contactos importados`);
+      setHtmlForm({ ...htmlForm, htmlContent: '' });
+    }
+    if (skipped > 0) {
+      toast.info(`${skipped} duplicados omitidos`);
+    }
+    if (errors > 0) {
+      toast.error(`${errors} errores`);
     }
 
     setIsImporting(false);
@@ -429,11 +666,19 @@ export default function Import() {
               <FileSpreadsheet className="h-4 w-4" />
               Archivo Excel/CSV
             </TabsTrigger>
+            <TabsTrigger value="html" className="gap-2">
+              <Code2 className="h-4 w-4" />
+              HTML/WhatsApp
+            </TabsTrigger>
+            <TabsTrigger value="bulk" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Texto Masivo
+            </TabsTrigger>
             <TabsTrigger value="single" className="gap-2">
               <Plus className="h-4 w-4" />
               Individual
             </TabsTrigger>
-            <TabsTrigger value="bulk" className="gap-2">
+          </TabsList>
               <FileText className="h-4 w-4" />
               Texto Masivo
             </TabsTrigger>
@@ -568,11 +813,156 @@ export default function Import() {
                   </div>
                 )}
 
+                {logs.length > 0 && (
+                  <div className="rounded-lg border bg-slate-950 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-green-400" />
+                        <span className="font-medium text-green-400">Logs de Importación</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={clearLogs}>
+                        Limpiar
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="text-xs font-mono text-green-400 space-y-1">
+                        {logs.map((log, i) => (
+                          <div key={i}>{log}</div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
                 <Button 
                   onClick={handleFileImport} 
                   disabled={isImporting || parsedContacts.length === 0}
                 >
                   {isImporting ? 'Importando...' : `Importar ${parsedContacts.length} Contactos`}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* HTML Import */}
+          <TabsContent value="html">
+            <Card>
+              <CardHeader>
+                <CardTitle>Importar desde HTML/WhatsApp</CardTitle>
+                <CardDescription>
+                  Pega el código HTML de WhatsApp Web con números de teléfono. El sistema extrae automáticamente solo los números.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Curso *</Label>
+                    <Select
+                      value={htmlForm.course_id}
+                      onValueChange={(v) => setHtmlForm({ ...htmlForm, course_id: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar curso" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {courses.filter((c) => c.is_active).map((course) => (
+                          <SelectItem key={course.id} value={course.id}>
+                            {course.code} - {course.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Grupo origen</Label>
+                    <Select
+                      value={htmlForm.source_group}
+                      onValueChange={(v) => setHtmlForm({ ...htmlForm, source_group: v as GroupType })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Opcional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(['G1', 'G2', 'G3', 'G4'] as GroupType[]).map((group) => (
+                          <SelectItem key={group} value={group}>
+                            {GROUP_LABELS[group]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Tipo de llamada</Label>
+                    <Select
+                      value={htmlForm.call_type}
+                      onValueChange={(v) => setHtmlForm({ ...htmlForm, call_type: v as 'call1' | 'call2' })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="call1">Llamada 1</SelectItem>
+                        <SelectItem value="call2">Llamada 2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Código HTML *</Label>
+                  <Textarea
+                    value={htmlForm.htmlContent}
+                    onChange={(e) => setHtmlForm({ ...htmlForm, htmlContent: e.target.value })}
+                    placeholder='<span>+51 918 951 753, +52 1 656 307 3112, ...</span>'
+                    rows={8}
+                    className="font-mono text-xs"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Pega aquí el código HTML copiado de WhatsApp Web. El sistema extraerá solo los números de teléfono y verificará duplicados.
+                  </p>
+                </div>
+
+                {logs.length > 0 && (
+                  <div className="rounded-lg border bg-slate-950 p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="h-4 w-4 text-green-400" />
+                        <span className="font-medium text-green-400">Logs de Importación</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={clearLogs}>
+                        Limpiar
+                      </Button>
+                    </div>
+                    <ScrollArea className="h-48">
+                      <div className="text-xs font-mono text-green-400 space-y-1">
+                        {logs.map((log, i) => (
+                          <div key={i}>{log}</div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {importResult && (
+                  <div className="flex gap-4">
+                    <Badge variant="default" className="gap-1 bg-success">
+                      <CheckCircle className="h-3 w-3" />
+                      {importResult.success} exitosos
+                    </Badge>
+                    {importResult.errors > 0 && (
+                      <Badge variant="destructive" className="gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {importResult.errors} errores/duplicados
+                      </Badge>
+                    )}
+                  </div>
+                )}
+
+                <Button 
+                  onClick={handleHTMLImport} 
+                  disabled={isImporting}
+                >
+                  {isImporting ? 'Procesando...' : 'Procesar HTML'}
                 </Button>
               </CardContent>
             </Card>
@@ -759,6 +1149,28 @@ export default function Import() {
                       Acepta números con espacios. Formatos válidos: "+51 912 345 678", "+51\t912345678", o solo número (usará +51)
                     </p>
                   </div>
+
+                  {logs.length > 0 && (
+                    <div className="rounded-lg border bg-slate-950 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Terminal className="h-4 w-4 text-green-400" />
+                          <span className="font-medium text-green-400">Logs de Importación</span>
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={clearLogs}>
+                          Limpiar
+                        </Button>
+                      </div>
+                      <ScrollArea className="h-48">
+                        <div className="text-xs font-mono text-green-400 space-y-1">
+                          {logs.map((log, i) => (
+                            <div key={i}>{log}</div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
+
                   {importResult && (
                     <div className="flex gap-4">
                       <Badge variant="default" className="gap-1 bg-success">

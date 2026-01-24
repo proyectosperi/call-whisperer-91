@@ -26,6 +26,7 @@ import {
   LogOut,
   Scissors,
   Settings,
+  Globe,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -34,6 +35,7 @@ const adminNavItems = [
   { title: 'Llamada 2', url: '/call2', icon: PhoneCall },
   { title: 'Contactos', url: '/contacts', icon: Users },
   { title: 'Cursos', url: '/courses', icon: BookOpen },
+  { title: 'Países', url: '/countries', icon: Globe },
   { title: 'Importar', url: '/import', icon: Upload },
   { title: 'Métricas', url: '/metrics', icon: BarChart3 },
 ];

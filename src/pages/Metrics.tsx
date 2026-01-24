@@ -48,6 +48,15 @@ export default function Metrics() {
     contact_count: '',
   });
 
+  const [bulkForm, setBulkForm] = useState({
+    course_id: '',
+    G1: '',
+    G2: '',
+    G3: '',
+    G4: '',
+    M1: '',
+  });
+
   const fetchMetrics = async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -106,6 +115,44 @@ export default function Metrics() {
       fetchMetrics();
     } catch (error) {
       toast.error('Error al registrar métrica');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkForm.course_id) {
+      toast.error('Selecciona un curso');
+      return;
+    }
+
+    // Verificar que al menos un grupo tenga valor
+    const hasValues = bulkForm.G1 || bulkForm.G2 || bulkForm.G3 || bulkForm.G4 || bulkForm.M1;
+    if (!hasValues) {
+      toast.error('Ingresa al menos un valor');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const records = [];
+      
+      if (bulkForm.G1) records.push({ course_id: bulkForm.course_id, group_type: 'G1' as GroupType, contact_count: parseInt(bulkForm.G1) });
+      if (bulkForm.G2) records.push({ course_id: bulkForm.course_id, group_type: 'G2' as GroupType, contact_count: parseInt(bulkForm.G2) });
+      if (bulkForm.G3) records.push({ course_id: bulkForm.course_id, group_type: 'G3' as GroupType, contact_count: parseInt(bulkForm.G3) });
+      if (bulkForm.G4) records.push({ course_id: bulkForm.course_id, group_type: 'G4' as GroupType, contact_count: parseInt(bulkForm.G4) });
+      if (bulkForm.M1) records.push({ course_id: bulkForm.course_id, group_type: 'M1' as GroupType, contact_count: parseInt(bulkForm.M1) });
+
+      const { error } = await supabase.from('group_metrics').insert(records);
+
+      if (error) throw error;
+
+      toast.success(`${records.length} métricas registradas en la misma hora`);
+      setBulkForm({ course_id: bulkForm.course_id, G1: '', G2: '', G3: '', G4: '', M1: '' });
+      fetchMetrics();
+    } catch (error) {
+      toast.error('Error al registrar métricas');
     } finally {
       setIsSaving(false);
     }
@@ -197,68 +244,161 @@ export default function Metrics() {
         </div>
 
         {/* Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Registrar Métrica</CardTitle>
-            <CardDescription>
-              Ingresa la cantidad de números en cada grupo (la fecha/hora se registra automáticamente)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-2 min-w-[200px] flex-1">
-                <Label>Curso</Label>
-                <Select
-                  value={form.course_id}
-                  onValueChange={(v) => setForm({ ...form, course_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {courses.filter((c) => c.is_active).map((course) => (
-                      <SelectItem key={course.id} value={course.id}>
-                        {course.code} - {course.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 min-w-[140px]">
-                <Label>Grupo</Label>
-                <Select
-                  value={form.group_type}
-                  onValueChange={(v) => setForm({ ...form, group_type: v as GroupType })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(['G1', 'G2', 'G3', 'G4', 'M1'] as GroupType[]).map((group) => (
-                      <SelectItem key={group} value={group}>
-                        {GROUP_LABELS[group]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 w-32">
-                <Label>Cantidad</Label>
-                <Input
-                  type="number"
-                  value={form.contact_count}
-                  onChange={(e) => setForm({ ...form, contact_count: e.target.value })}
-                  placeholder="0"
-                  min="0"
-                />
-              </div>
-              <Button type="submit" disabled={isSaving}>
-                <Plus className="h-4 w-4 mr-2" />
-                {isSaving ? 'Guardando...' : 'Registrar'}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Formulario Individual */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Registrar por Grupo</CardTitle>
+              <CardDescription>
+                Ingresa la cantidad de un grupo específico
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Curso</Label>
+                  <Select
+                    value={form.course_id}
+                    onValueChange={(v) => setForm({ ...form, course_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.filter((c) => c.is_active).map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.code} - {course.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Grupo</Label>
+                    <Select
+                      value={form.group_type}
+                      onValueChange={(v) => setForm({ ...form, group_type: v as GroupType })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(['G1', 'G2', 'G3', 'G4', 'M1'] as GroupType[]).map((group) => (
+                          <SelectItem key={group} value={group}>
+                            {GROUP_LABELS[group]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Cantidad</Label>
+                    <Input
+                      type="number"
+                      value={form.contact_count}
+                      onChange={(e) => setForm({ ...form, contact_count: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <Button type="submit" disabled={isSaving} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isSaving ? 'Guardando...' : 'Registrar'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Formulario Completo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Registrar Todos los Grupos</CardTitle>
+              <CardDescription>
+                Ingresa todos los grupos en un solo registro (misma hora)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleBulkSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Curso</Label>
+                  <Select
+                    value={bulkForm.course_id}
+                    onValueChange={(v) => setBulkForm({ ...bulkForm, course_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {courses.filter((c) => c.is_active).map((course) => (
+                        <SelectItem key={course.id} value={course.id}>
+                          {course.code} - {course.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-5 gap-2">
+                  <div className="space-y-2">
+                    <Label className="text-xs">G1</Label>
+                    <Input
+                      type="number"
+                      value={bulkForm.G1}
+                      onChange={(e) => setBulkForm({ ...bulkForm, G1: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">G2</Label>
+                    <Input
+                      type="number"
+                      value={bulkForm.G2}
+                      onChange={(e) => setBulkForm({ ...bulkForm, G2: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">G3</Label>
+                    <Input
+                      type="number"
+                      value={bulkForm.G3}
+                      onChange={(e) => setBulkForm({ ...bulkForm, G3: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">G4</Label>
+                    <Input
+                      type="number"
+                      value={bulkForm.G4}
+                      onChange={(e) => setBulkForm({ ...bulkForm, G4: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs">M1</Label>
+                    <Input
+                      type="number"
+                      value={bulkForm.M1}
+                      onChange={(e) => setBulkForm({ ...bulkForm, M1: e.target.value })}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                </div>
+                <Button type="submit" disabled={isSaving} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {isSaving ? 'Guardando...' : 'Registrar Todos'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Gráfico de Evolución */}
         <Card>
