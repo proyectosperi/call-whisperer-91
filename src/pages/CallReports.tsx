@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { BarChart3, PieChart as PieChartIcon, Users, Phone } from 'lucide-react';
-import { CALL1_STATUS_LABELS, CALL2_STATUS_LABELS } from '@/types/database';
+import { CALL1_STATUS_LABELS, CALL2_STATUS_LABELS, GROUP_LABELS } from '@/types/database';
 import type { Call1Status, Call2Status } from '@/types/database';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
@@ -98,6 +98,13 @@ export default function CallReports() {
     count: call1Records.filter(r => r.status === status).length,
   }));
 
+  // 6. Tarjetas por grupo origen (source_group del contacto)
+  const call1OriginGroupCards = (['G1', 'G2', 'G3', 'G4'] as const).map((group) => ({
+    group,
+    label: GROUP_LABELS[group],
+    count: call1Records.filter(r => r.contact.source_group === group).length,
+  }));
+
   // ============ MÉTRICAS LLAMADA 2 ============
   
   // 1. Cantidad de números por estado
@@ -163,6 +170,13 @@ export default function CallReports() {
     count: call2Records.filter(r => r.status === status).length,
   }));
 
+  // 6. Tarjetas por grupo origen
+  const call2OriginGroupCards = (['G1', 'G2', 'G3', 'G4'] as const).map((group) => ({
+    group,
+    label: GROUP_LABELS[group],
+    count: call2Records.filter(r => r.origin_group === group).length,
+  }));
+
   if (isLoadingCall1 || isLoadingCall2) {
     return (
       <AppLayout title="Reportes de Llamadas">
@@ -226,6 +240,28 @@ export default function CallReports() {
                   <Card key={card.status}>
                     <CardHeader className="pb-2">
                       <CardDescription className="text-xs">{card.label}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{card.count}</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {call1Records.length > 0
+                          ? `${((card.count / call1Records.length) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Tarjetas por Grupo Origen */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Números por Grupo Origen</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {call1OriginGroupCards.map((card) => (
+                  <Card key={card.group}>
+                    <CardHeader className="pb-2">
+                      <CardDescription className="text-xs">Grupo {card.label}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{card.count}</div>
@@ -400,6 +436,28 @@ export default function CallReports() {
                   <Card key={card.status}>
                     <CardHeader className="pb-2">
                       <CardDescription className="text-xs">{card.label}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{card.count}</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {call2Records.length > 0
+                          ? `${((card.count / call2Records.length) * 100).toFixed(1)}%`
+                          : '0%'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+
+            {/* Tarjetas por Grupo Origen */}
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Números por Grupo Origen</h2>
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                {call2OriginGroupCards.map((card) => (
+                  <Card key={card.group}>
+                    <CardHeader className="pb-2">
+                      <CardDescription className="text-xs">Grupo {card.label}</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{card.count}</div>

@@ -172,11 +172,15 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
                     <SelectValue placeholder="Seleccionar" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(['G1', 'G2', 'G3', 'G4', 'M1'] as GroupType[]).map((g) => (
-                      <SelectItem key={g} value={g}>
-                        {GROUP_LABELS[g]}
-                      </SelectItem>
-                    ))}
+                    {type === 'call2' ? (
+                      <SelectItem value="M1">{GROUP_LABELS['M1']}</SelectItem>
+                    ) : (
+                      (['G1', 'G2', 'G3', 'G4', 'M1'] as GroupType[]).map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {GROUP_LABELS[g]}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
