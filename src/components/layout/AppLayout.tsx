@@ -37,19 +37,19 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
-        <SidebarInset className="flex-1">
-          <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
+        <SidebarInset className="flex-1 flex flex-col min-w-0">
+          <header className="flex h-12 sm:h-14 shrink-0 items-center gap-2 border-b bg-background px-3 sm:px-4 sticky top-0 z-10">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="h-4" />
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <BreadcrumbPage className="font-medium">{title || 'Dashboard'}</BreadcrumbPage>
+                  <BreadcrumbPage className="font-medium text-sm sm:text-base truncate">{title || 'Dashboard'}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </header>
-          <main className="flex-1 p-6 bg-background">{children}</main>
+          <main className="flex-1 p-3 sm:p-6 bg-background overflow-x-hidden">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

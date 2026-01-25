@@ -18,6 +18,7 @@ interface Call1WithContact {
     country_code: string;
     phone_number: string;
     full_phone: string;
+    source_group?: GroupType;
     course: { id: string; code: string; name: string };
   };
 }
@@ -42,6 +43,7 @@ export function useCall1Data(courseId?: string) {
             country_code,
             phone_number,
             full_phone,
+            source_group,
             course:courses!contacts_course_id_fkey(id, code, name)
           )
         `)

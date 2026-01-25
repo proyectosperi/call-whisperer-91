@@ -40,13 +40,13 @@ export default function Dashboard() {
 
   return (
     <AppLayout title="Dashboard">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             ¡Hola, {profile?.full_name?.split(' ')[0] || 'Usuario'}!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm sm:text-base text-muted-foreground">
             {isAdmin
               ? 'Resumen general del sistema de llamadas'
               : 'Resumen de tus llamadas asignadas'}
@@ -55,13 +55,13 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         {isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-card animate-pulse rounded-lg" />
+              <div key={i} className="h-24 sm:h-32 bg-card animate-pulse rounded-lg" />
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
             {isAdmin && (
               <StatsCard
                 title="Total Contactos"
@@ -101,7 +101,7 @@ export default function Dashboard() {
 
         {/* Charts Grid */}
         {!isLoading && (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
             <StatusChart title="Estados Llamada 1" data={call1ChartData} />
             <StatusChart title="Estados Llamada 2" data={call2ChartData} />
             {isAdmin && <GroupDistribution data={stats?.contactsByGroup || []} />}
@@ -110,18 +110,18 @@ export default function Dashboard() {
 
         {/* Country distribution for admins */}
         {isAdmin && !isLoading && stats && stats.contactsByCountry.length > 0 && (
-          <div className="bg-card rounded-lg p-6 border">
-            <h3 className="font-semibold mb-4">Contactos por País</h3>
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <div className="bg-card rounded-lg p-4 sm:p-6 border">
+            <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Contactos por País</h3>
+            <div className="grid gap-2 sm:gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
               {stats.contactsByCountry
                 .sort((a, b) => b.count - a.count)
                 .map((item) => (
                   <div
                     key={item.country}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-2 sm:p-3 bg-muted/50 rounded-lg"
                   >
-                    <span className="font-medium">{item.country}</span>
-                    <span className="text-muted-foreground">{item.count}</span>
+                    <span className="font-medium text-sm truncate">{item.country}</span>
+                    <span className="text-muted-foreground text-sm ml-2">{item.count}</span>
                   </div>
                 ))}
             </div>

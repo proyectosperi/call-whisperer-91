@@ -15,6 +15,7 @@ import MyCourses from "./pages/MyCourses";
 import Import from "./pages/Import";
 import Metrics from "./pages/Metrics";
 import CallReports from "./pages/CallReports";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/import" element={<Import />} />
             <Route path="/metrics" element={<Metrics />} />
             <Route path="/call-reports" element={<CallReports />} />
+            <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

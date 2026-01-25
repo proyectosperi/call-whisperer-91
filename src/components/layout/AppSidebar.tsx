@@ -28,6 +28,7 @@ import {
   Scissors,
   Settings,
   Globe,
+  Download,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -47,6 +48,7 @@ const callerNavItems = [
   { title: 'Mis Llamadas 1', url: '/call1', icon: Phone },
   { title: 'Mis Llamadas 2', url: '/call2', icon: PhoneCall },
   { title: 'Mis Cursos', url: '/my-courses', icon: BookOpen },
+  { title: 'Instalar App', url: '/install', icon: Download },
 ];
 
 export function AppSidebar() {
