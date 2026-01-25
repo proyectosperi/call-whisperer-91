@@ -214,7 +214,7 @@ export default function Metrics() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {courses.filter((c) => c.is_active).map((course) => {
             const latest = latestMetrics[course.id] || {};
-            const total = Object.values(latest).reduce((sum, val) => sum + (val || 0), 0);
+            const total = Object.values(latest).reduce((sum: number, val: number) => sum + (val || 0), 0);
             
             return (
               <Card key={course.id}>

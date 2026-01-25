@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CallRecordRow } from '@/components/calls/CallRecordRow';
+import { CallRecordCard } from '@/components/calls/CallRecordCard';
 import { useCall1Data } from '@/hooks/useCall1Data';
 import { useCourses } from '@/hooks/useCourses';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,8 +16,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { BulkAssignDialog } from '@/components/admin/BulkAssignDialog';
 import { Search, Phone, Users } from 'lucide-react';
 import { CALL1_STATUS_LABELS, Call1Status } from '@/types/database';
+
 export default function Call1() {
   const { isAdmin } = useAuth();
+  const isMobile = useIsMobile();
   const { records, isLoading, updateRecord, refetch } = useCall1Data();
   const { courses } = useCourses();
   const [search, setSearch] = useState('');
@@ -59,36 +63,36 @@ export default function Call1() {
 
   return (
     <AppLayout title="Llamada 1">
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Phone className="h-6 w-6 text-primary" />
+            <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
+              <Phone className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               {isAdmin ? 'Gestión Llamada 1' : 'Mis Llamadas 1'}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {isAdmin
                 ? 'Seguimiento de llamadas para unirse a G1/G3'
                 : 'Tus números asignados para llamar'}
             </p>
           </div>
-          <Badge variant="secondary" className="text-lg px-4 py-2">
+          <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 w-fit">
             {records.length} registros
           </Badge>
         </div>
 
         {/* Stats + Bulk Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {Object.entries(statusCounts).map(([status, count]) => (
-              <Badge key={status} variant="outline" className="text-sm">
+              <Badge key={status} variant="outline" className="text-xs sm:text-sm">
                 {CALL1_STATUS_LABELS[status as Call1Status]}: {count}
               </Badge>
             ))}
           </div>
           {isAdmin && selectedIds.length > 0 && (
-            <Button onClick={() => setShowAssignDialog(true)} size="sm">
+            <Button onClick={() => setShowAssignDialog(true)} size="sm" className="w-full sm:w-auto">
               <Users className="h-4 w-4 mr-2" />
               Asignar ({selectedIds.length})
             </Button>
@@ -97,60 +101,88 @@ export default function Call1() {
 
         {/* Filters */}
         <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-base">Filtros</CardTitle>
+          <CardHeader className="pb-3 sm:pb-4">
+            <CardTitle className="text-sm sm:text-base">Filtros</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por teléfono o código de curso..."
+                  placeholder="Buscar teléfono o curso..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
-              <Select value={courseFilter} onValueChange={setCourseFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrar por curso" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los cursos</SelectItem>
-                  {courses.filter(c => c.is_active).map((course) => (
-                    <SelectItem key={course.id} value={course.id}>
-                      {course.code}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filtrar por estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los estados</SelectItem>
-                  {Object.entries(CALL1_STATUS_LABELS).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+                <Select value={courseFilter} onValueChange={setCourseFilter}>
+                  <SelectTrigger className="w-full sm:w-36">
+                    <SelectValue placeholder="Curso" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {courses.filter(c => c.is_active).map((course) => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.code}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {Object.entries(CALL1_STATUS_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Table */}
-        <Card>
-          <CardContent className="p-0">
-            {isLoading ? (
-              <div className="p-8 text-center text-muted-foreground">Cargando...</div>
-            ) : filteredRecords.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                No hay registros que mostrar
+        {/* Content */}
+        {isLoading ? (
+          <div className="p-8 text-center text-muted-foreground">Cargando...</div>
+        ) : filteredRecords.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            No hay registros que mostrar
+          </div>
+        ) : isMobile ? (
+          /* Mobile: Card layout */
+          <div className="space-y-3">
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-1">
+                <Checkbox
+                  checked={selectedIds.length === filteredRecords.length && filteredRecords.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">
+                  Seleccionar todos ({filteredRecords.length})
+                </span>
               </div>
-            ) : (
+            )}
+            {filteredRecords.map((record) => (
+              <CallRecordCard
+                key={record.id}
+                type="call1"
+                record={record}
+                onUpdate={updateRecord}
+                selected={selectedIds.includes(record.id)}
+                onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          /* Desktop: Table layout */
+          <Card>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -182,9 +214,9 @@ export default function Call1() {
                   ))}
                 </TableBody>
               </Table>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Bulk Assign Dialog */}
         <BulkAssignDialog
