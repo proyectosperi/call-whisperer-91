@@ -21,6 +21,9 @@ interface Call1WithContact {
     source_group?: GroupType;
     course: { id: string; code: string; name: string };
   };
+  caller?: {
+    full_name: string;
+  };
 }
 
 export function useCall1Data(courseId?: string) {
@@ -45,7 +48,8 @@ export function useCall1Data(courseId?: string) {
             full_phone,
             source_group,
             course:courses!contacts_course_id_fkey(id, code, name)
-          )
+          ),
+          caller:profiles!call1_records_caller_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false });
 
