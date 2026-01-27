@@ -21,6 +21,9 @@ interface Call2WithContact {
     full_phone: string;
     course: { id: string; code: string; name: string };
   };
+  caller?: {
+    full_name: string;
+  };
 }
 
 export function useCall2Data(courseId?: string) {
@@ -44,7 +47,8 @@ export function useCall2Data(courseId?: string) {
             phone_number,
             full_phone,
             course:courses!contacts_course_id_fkey(id, code, name)
-          )
+          ),
+          caller:profiles!call2_records_caller_id_fkey(full_name)
         `)
         .order('created_at', { ascending: false });
 
