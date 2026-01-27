@@ -28,13 +28,17 @@ export interface CallRecordRowProps {
         name: string;
       };
     };
+    caller?: {
+      full_name: string;
+    };
   };
   onUpdate: (id: string, updates: any) => Promise<void>;
   selected?: boolean;
   onToggleSelect?: () => void;
+  showCaller?: boolean;
 }
 
-export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect }: CallRecordRowProps) {
+export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect, showCaller }: CallRecordRowProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -124,6 +128,15 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
             <span className="text-muted-foreground text-sm">—</span>
           )}
         </TableCell>
+        {showCaller && (
+          <TableCell>
+            {record.caller?.full_name ? (
+              <span className="text-sm">{record.caller.full_name}</span>
+            ) : (
+              <span className="text-muted-foreground text-sm">Sin asignar</span>
+            )}
+          </TableCell>
+        )}
         <TableCell>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openWhatsApp}>
@@ -142,7 +155,7 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
       </TableRow>
       {isExpanded && (
         <TableRow className="bg-muted/30">
-          <TableCell colSpan={onToggleSelect ? (type === 'call2' ? 7 : 6) : (type === 'call2' ? 6 : 5)} className="p-4">
+          <TableCell colSpan={onToggleSelect ? (type === 'call2' ? (showCaller ? 9 : 7) : (showCaller ? 8 : 6)) : (type === 'call2' ? (showCaller ? 8 : 6) : (showCaller ? 7 : 5))} className="p-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Estado</label>

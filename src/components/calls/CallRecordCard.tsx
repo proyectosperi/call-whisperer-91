@@ -29,13 +29,17 @@ export interface CallRecordCardProps {
         name: string;
       };
     };
+    caller?: {
+      full_name: string;
+    };
   };
   onUpdate: (id: string, updates: any) => Promise<void>;
   selected?: boolean;
   onToggleSelect?: () => void;
+  showCaller?: boolean;
 }
 
-export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelect }: CallRecordCardProps) {
+export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelect, showCaller }: CallRecordCardProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -144,6 +148,16 @@ export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelec
               {localGroup && (
                 <Badge variant="secondary" className="text-xs">
                   Destino: {GROUP_LABELS[localGroup]}
+                </Badge>
+              )}
+              {showCaller && record.caller?.full_name && (
+                <Badge variant="outline" className="text-xs bg-muted">
+                  📞 {record.caller.full_name}
+                </Badge>
+              )}
+              {showCaller && !record.caller?.full_name && (
+                <Badge variant="outline" className="text-xs text-muted-foreground">
+                  Sin asignar
                 </Badge>
               )}
             </div>
