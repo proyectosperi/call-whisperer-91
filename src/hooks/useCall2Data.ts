@@ -37,35 +37,83 @@ export function useCall2Data(courseId?: string) {
 
     try {
       setIsLoading(true);
+      
+      // Primero obtener los registros de call2
       let query = supabase
         .from('call2_records')
-        .select(`
-          *,
-          contact:contacts!call2_records_contact_id_fkey(
-            id,
-            country_code,
-            phone_number,
-            full_phone,
-            course:courses!contacts_course_id_fkey(id, code, name)
-          ),
-          caller:profiles!call2_records_caller_id_fkey(full_name)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (!isAdmin) {
         query = query.eq('caller_id', user.id);
       }
 
-      if (courseId) {
-        query = query.eq('contact.course_id', courseId);
+      const { data: recordsData, error: recordsError } = await query;
+
+      if (recordsError) throw recordsError;
+      if (!recordsData || recordsData.length === 0) {
+        setRecords([]);
+        setIsLoading(false);
+        return;
       }
 
-      const { data, error: fetchError } = await query;
+      // Obtener IDs únicos de contactos y callers
+      const contactIds = [...new Set(recordsData.map(r => r.contact_id))];
+      const callerIds = [...new Set(recordsData.map(r => r.caller_id).filter(Boolean))];
 
-      if (fetchError) throw fetchError;
-      setRecords((data as unknown as Call2WithContact[]) || []);
+      // Obtener contactos con cursos
+      const { data: contacts, error: contactsError } = await supabase
+        .from('contacts')
+        .select('id, country_code, phone_number, full_phone, course_id, courses(id, code, name)')
+        .in('id', contactIds);
+
+      if (contactsError) {
+        console.error('Error fetching contacts:', contactsError);
+      }
+
+      // Obtener perfiles de callers
+      const { data: callers, error: callersError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', callerIds);
+
+      if (callersError) {
+        console.error('Error fetching callers:', callersError);
+      }
+
+      // Mapear los datos
+      const contactsMap = new Map((contacts || []).map(c => [c.id, c]));
+      const callersMap = new Map((callers || []).map(p => [p.user_id, p]));
+
+      const enrichedRecords = recordsData.map(record => {
+        const contact = contactsMap.get(record.contact_id);
+        const caller = record.caller_id ? callersMap.get(record.caller_id) : null;
+
+        if (!contact) return null;
+
+        return {
+          ...record,
+          contact: {
+            id: contact.id,
+            country_code: contact.country_code,
+            phone_number: contact.phone_number,
+            full_phone: contact.full_phone,
+            course: Array.isArray(contact.courses) ? contact.courses[0] : contact.courses,
+          },
+          caller: caller ? { full_name: caller.full_name } : undefined,
+        };
+      }).filter(Boolean) as Call2WithContact[];
+
+      // Filtrar por curso si es necesario
+      let finalRecords = enrichedRecords;
+      if (courseId) {
+        finalRecords = enrichedRecords.filter(r => r.contact.course.id === courseId);
+      }
+
+      setRecords(finalRecords);
     } catch (err) {
       setError(err as Error);
+      console.error('Error in fetchData:', err);
     } finally {
       setIsLoading(false);
     }
