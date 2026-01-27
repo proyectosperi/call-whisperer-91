@@ -176,6 +176,7 @@ export default function Call1() {
                 onUpdate={updateRecord}
                 selected={selectedIds.includes(record.id)}
                 onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
+                showCaller={isAdmin}
               />
             ))}
           </div>
@@ -198,6 +199,7 @@ export default function Call1() {
                     <TableHead>Curso</TableHead>
                     <TableHead>Estado</TableHead>
                     <TableHead>Grupo</TableHead>
+                    {isAdmin && <TableHead>Llamadora</TableHead>}
                     <TableHead className="w-24">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -210,6 +212,7 @@ export default function Call1() {
                       onUpdate={updateRecord}
                       selected={selectedIds.includes(record.id)}
                       onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
+                      showCaller={isAdmin}
                     />
                   ))}
                 </TableBody>

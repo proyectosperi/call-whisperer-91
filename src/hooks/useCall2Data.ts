@@ -63,7 +63,7 @@ export function useCall2Data(courseId?: string) {
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
-      setRecords((data as Call2WithContact[]) || []);
+      setRecords((data as unknown as Call2WithContact[]) || []);
     } catch (err) {
       setError(err as Error);
     } finally {
