@@ -82,36 +82,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
+        data: {
+          full_name: fullName,
+        },
       },
     });
 
-    if (error) return { error };
-
-    if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase.from('profiles').insert({
-        user_id: data.user.id,
-        email,
-        full_name: fullName,
-      });
-
-      if (profileError) return { error: profileError };
-
-      // Assign default role as caller
-      const { error: roleError } = await supabase.from('user_roles').insert({
-        user_id: data.user.id,
-        role: 'caller',
-      });
-
-      if (roleError) return { error: roleError };
-    }
-
-    return { error: null };
+    // Profile and role are created automatically by database trigger
+    return { error };
   };
 
   const signOut = async () => {
