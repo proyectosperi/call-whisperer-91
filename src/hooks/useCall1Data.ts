@@ -19,7 +19,7 @@ interface Call1WithContact {
     phone_number: string;
     full_phone: string;
     source_group?: GroupType;
-    course: { id: string; code: string; name: string };
+    course: { id: string; code: string; name: string; campaign_start_date?: string | null };
     country?: { id: string; name: string; code: string };
   };
   caller?: {
@@ -65,7 +65,7 @@ export function useCall1Data(courseId?: string) {
       // Obtener contactos con cursos y países
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
-        .select('id, country_code, phone_number, full_phone, source_group, course_id, country_id, courses(id, code, name), countries(id, name, code)')
+        .select('id, country_code, phone_number, full_phone, source_group, course_id, country_id, courses(id, code, name, campaign_start_date), countries(id, name, code)')
         .in('id', contactIds);
 
       if (contactsError) {
@@ -112,6 +112,19 @@ export function useCall1Data(courseId?: string) {
       if (courseId) {
         finalRecords = enrichedRecords.filter(r => r.contact.course.id === courseId);
       }
+
+      // Ordenar por fecha de inicio del curso (más próximo primero)
+      finalRecords.sort((a, b) => {
+        const dateA = a.contact.course.campaign_start_date;
+        const dateB = b.contact.course.campaign_start_date;
+        
+        // Los que no tienen fecha van al final
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      });
 
       setRecords(finalRecords);
     } catch (err) {
