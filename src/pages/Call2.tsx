@@ -25,8 +25,18 @@ export default function Call2() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
+  const [countryFilter, setCountryFilter] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+
+  // Extraer países únicos de los registros
+  const uniqueCountries = Array.from(
+    new Map(
+      records
+        .filter(r => r.contact.country)
+        .map(r => [r.contact.country!.id, r.contact.country!])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -53,7 +63,8 @@ export default function Call2() {
       record.contact.course.code.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     const matchesCourse = courseFilter === 'all' || record.contact.course.id === courseFilter;
-    return matchesSearch && matchesStatus && matchesCourse;
+    const matchesCountry = countryFilter === 'all' || record.contact.country?.id === countryFilter;
+    return matchesSearch && matchesStatus && matchesCourse && matchesCountry;
   });
 
   const statusCounts = records.reduce((acc, r) => {
@@ -115,7 +126,20 @@ export default function Call2() {
                   className="pl-10"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-4">
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4">
+                <Select value={countryFilter} onValueChange={setCountryFilter}>
+                  <SelectTrigger className="w-full sm:w-36">
+                    <SelectValue placeholder="País" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {uniqueCountries.map((country) => (
+                      <SelectItem key={country.id} value={country.id}>
+                        {country.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={courseFilter} onValueChange={setCourseFilter}>
                   <SelectTrigger className="w-full sm:w-36">
                     <SelectValue placeholder="Curso" />
