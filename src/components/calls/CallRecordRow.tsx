@@ -60,8 +60,16 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
   };
 
   const openWhatsApp = () => {
-    const cleanNumber = record.contact.full_phone.replace(/[^0-9]/g, '');
-    window.open(`https://wa.me/${cleanNumber}`, '_blank');
+    // Limpiar el número: remover todo excepto dígitos
+    let cleanNumber = record.contact.full_phone.replace(/[^0-9]/g, '');
+    
+    // Si el número empieza con 0, quitarlo (algunos países lo usan localmente)
+    if (cleanNumber.startsWith('0')) {
+      cleanNumber = cleanNumber.substring(1);
+    }
+    
+    // Abrir WhatsApp con el número limpio
+    window.open(`https://api.whatsapp.com/send?phone=${cleanNumber}`, '_blank');
   };
 
   const handleSave = async () => {
