@@ -45,15 +45,13 @@ export default function MyCourses() {
         .select('contact:contacts(course_id)')
         .eq('caller_id', user?.id);
 
-      // Collect unique course IDs
-      const courseIds = new Set<string>();
+      // Count calls by course
       const call1ByCourse: Record<string, number> = {};
       const call2ByCourse: Record<string, number> = {};
 
       call1Data?.forEach((record) => {
         const courseId = record.contact?.course_id;
         if (courseId) {
-          courseIds.add(courseId);
           call1ByCourse[courseId] = (call1ByCourse[courseId] || 0) + 1;
         }
       });
@@ -61,22 +59,16 @@ export default function MyCourses() {
       call2Data?.forEach((record) => {
         const courseId = record.contact?.course_id;
         if (courseId) {
-          courseIds.add(courseId);
           call2ByCourse[courseId] = (call2ByCourse[courseId] || 0) + 1;
         }
       });
 
-      if (courseIds.size === 0) {
-        setCourses([]);
-        return;
-      }
-
-      // Get course details
+      // Get ALL active courses
       const { data: coursesData } = await supabase
         .from('courses')
         .select('*')
-        .in('id', Array.from(courseIds))
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .order('campaign_start_date', { ascending: true, nullsFirst: false });
 
       const coursesWithStats: CourseWithStats[] = (coursesData || []).map((course) => ({
         id: course.id,
@@ -87,6 +79,14 @@ export default function MyCourses() {
         call1Count: call1ByCourse[course.id] || 0,
         call2Count: call2ByCourse[course.id] || 0,
       }));
+
+      // Ordenar: primero cursos con fecha de inicio más próxima
+      coursesWithStats.sort((a, b) => {
+        if (!a.campaign_start_date && !b.campaign_start_date) return 0;
+        if (!a.campaign_start_date) return 1;
+        if (!b.campaign_start_date) return -1;
+        return new Date(a.campaign_start_date).getTime() - new Date(b.campaign_start_date).getTime();
+      });
 
       setCourses(coursesWithStats);
     } catch (err) {
@@ -104,10 +104,10 @@ export default function MyCourses() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <BookOpen className="h-6 w-6 text-primary" />
-              Mis Cursos Asignados
+              Cursos Activos
             </h1>
             <p className="text-muted-foreground">
-              Cursos donde tienes llamadas asignadas
+              Todos los cursos activos y tus llamadas asignadas
             </p>
           </div>
           <Badge variant="secondary" className="text-lg px-4 py-2">
@@ -123,7 +123,7 @@ export default function MyCourses() {
         ) : courses.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
-              No tienes cursos asignados actualmente
+              No hay cursos activos actualmente
             </CardContent>
           </Card>
         ) : (
