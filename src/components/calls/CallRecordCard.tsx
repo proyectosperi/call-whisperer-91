@@ -61,7 +61,9 @@ export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelec
   };
 
   const callPhone = () => {
-    window.location.href = `tel:${record.contact.full_phone}`;
+    // Limpiar el número: remover todo excepto dígitos y el signo +
+    const cleanNumber = record.contact.full_phone.replace(/[^0-9+]/g, '');
+    window.location.href = `tel:${cleanNumber}`;
   };
 
   const openWhatsApp = () => {
