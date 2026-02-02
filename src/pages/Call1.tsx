@@ -26,6 +26,7 @@ export default function Call1() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [courseFilter, setCourseFilter] = useState<string>('all');
   const [countryFilter, setCountryFilter] = useState<string>('all');
+  const [callerFilter, setCallerFilter] = useState<string>('all');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
@@ -35,6 +36,15 @@ export default function Call1() {
       records
         .filter(r => r.contact.country)
         .map(r => [r.contact.country!.id, r.contact.country!])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  // Extraer llamadoras únicas de los registros (solo para admin)
+  const uniqueCallers = Array.from(
+    new Map(
+      records
+        .filter(r => r.caller_id && r.caller)
+        .map(r => [r.caller_id!, { id: r.caller_id!, name: r.caller!.full_name }])
     ).values()
   ).sort((a, b) => a.name.localeCompare(b.name));
 
@@ -64,7 +74,8 @@ export default function Call1() {
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     const matchesCourse = courseFilter === 'all' || record.contact.course.id === courseFilter;
     const matchesCountry = countryFilter === 'all' || record.contact.country?.id === countryFilter;
-    return matchesSearch && matchesStatus && matchesCourse && matchesCountry;
+    const matchesCaller = callerFilter === 'all' || record.caller_id === callerFilter;
+    return matchesSearch && matchesStatus && matchesCourse && matchesCountry && matchesCaller;
   });
 
   const statusCounts = records.reduce((acc, r) => {
@@ -126,7 +137,7 @@ export default function Call1() {
                   className="pl-10"
                 />
               </div>
-              <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-4">
+              <div className={`grid gap-2 sm:flex sm:gap-4 ${isAdmin ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
                 <Select value={countryFilter} onValueChange={setCountryFilter}>
                   <SelectTrigger className="w-full sm:w-36">
                     <SelectValue placeholder="País" />
@@ -166,6 +177,21 @@ export default function Call1() {
                     ))}
                   </SelectContent>
                 </Select>
+                {isAdmin && (
+                  <Select value={callerFilter} onValueChange={setCallerFilter}>
+                    <SelectTrigger className="w-full sm:w-40">
+                      <SelectValue placeholder="Llamadora" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      {uniqueCallers.map((caller) => (
+                        <SelectItem key={caller.id} value={caller.id}>
+                          {caller.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </CardContent>
