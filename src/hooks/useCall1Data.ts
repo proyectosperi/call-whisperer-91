@@ -66,7 +66,7 @@ export function useCall1Data(courseId?: string) {
       // Obtener contactos con cursos y países
       const { data: contacts, error: contactsError } = await supabase
         .from('contacts')
-        .select('id, country_code, phone_number, full_phone, source_group, course_id, country_id, courses(id, code, name, campaign_start_date), countries(id, name, code)')
+        .select('id, country_code, phone_number, full_phone, source_group, course_id, country_id, course:courses(id, code, name, campaign_start_date), country:countries(id, name, code)')
         .in('id', contactIds);
 
       if (contactsError) {
@@ -101,8 +101,8 @@ export function useCall1Data(courseId?: string) {
             phone_number: contact.phone_number,
             full_phone: contact.full_phone,
             source_group: contact.source_group,
-            course: Array.isArray(contact.courses) ? contact.courses[0] : contact.courses,
-            country: Array.isArray(contact.countries) ? contact.countries[0] : contact.countries,
+            course: contact.course,
+            country: contact.country,
           },
           caller: caller ? { full_name: caller.full_name } : undefined,
         };
