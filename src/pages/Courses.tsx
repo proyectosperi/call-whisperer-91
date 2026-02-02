@@ -13,6 +13,7 @@ import { BookOpen, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseDateString } from '@/lib/dateUtils';
 
 export default function Courses() {
   const { courses, isLoading, createCourse, updateCourse, deleteCourse } = useCourses();
@@ -187,7 +188,7 @@ export default function Courses() {
                       <TableCell>{course.name}</TableCell>
                       <TableCell>
                         {course.campaign_start_date
-                          ? format(new Date(course.campaign_start_date), 'dd MMM yyyy', { locale: es })
+                          ? format(parseDateString(course.campaign_start_date), 'dd MMM yyyy', { locale: es })
                           : '—'}
                       </TableCell>
                       <TableCell>

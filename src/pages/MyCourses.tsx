@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BookOpen, Phone, PhoneCall, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { parseDateString } from '@/lib/dateUtils';
 
 interface CourseWithStats {
   id: string;
@@ -149,7 +150,7 @@ export default function MyCourses() {
                       <Calendar className="h-4 w-4" />
                       <span>
                         Inicio:{' '}
-                        {format(new Date(course.campaign_start_date), "d 'de' MMMM, yyyy", {
+                        {format(parseDateString(course.campaign_start_date), "d 'de' MMMM, yyyy", {
                           locale: es,
                         })}
                       </span>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { parseDateString } from '@/lib/dateUtils';
 import type { Call1Record, Call1Status, GroupType } from '@/types/database';
 
 interface Call1WithContact {
@@ -123,7 +124,7 @@ export function useCall1Data(courseId?: string) {
         if (!dateA) return 1;
         if (!dateB) return -1;
         
-        return new Date(dateA).getTime() - new Date(dateB).getTime();
+        return parseDateString(dateA).getTime() - parseDateString(dateB).getTime();
       });
 
       setRecords(finalRecords);
