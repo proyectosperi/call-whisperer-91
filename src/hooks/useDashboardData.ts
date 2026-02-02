@@ -33,10 +33,11 @@ export function useDashboardData() {
       try {
         setIsLoading(true);
 
-        // Total contacts
-        const { count: totalContacts } = await supabase
+        // Total contacts únicos
+        const { data: contactsData } = await supabase
           .from('contacts')
-          .select('*', { count: 'exact', head: true });
+          .select('id');
+        const totalContacts = contactsData?.length || 0;
 
         // Contacts by country
         const { data: countryData } = await supabase

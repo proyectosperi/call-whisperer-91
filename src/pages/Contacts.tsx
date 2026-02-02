@@ -41,8 +41,14 @@ export default function Contacts() {
       const { data, error } = await supabase
         .from('contacts')
         .select(`
-          *,
-          course:courses!contacts_course_id_fkey(id, code, name)
+          id,
+          country_code,
+          phone_number,
+          full_phone,
+          course_id,
+          source_group,
+          created_at,
+          course:courses(id, code, name)
         `)
         .order('created_at', { ascending: false })
         .limit(500);

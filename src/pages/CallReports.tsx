@@ -67,8 +67,8 @@ export default function CallReports() {
   // 3. % de números por país
   const call1ByCountry = Object.entries(
     call1Records.reduce((acc, record) => {
-      const country = record.contact.country_code;
-      acc[country] = (acc[country] || 0) + 1;
+      const countryName = record.contact.country?.name || record.contact.country_code || 'Sin país';
+      acc[countryName] = (acc[countryName] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   ).map(([country, count]) => ({
@@ -139,8 +139,8 @@ export default function CallReports() {
   // 3. % de números por país
   const call2ByCountry = Object.entries(
     call2Records.reduce((acc, record) => {
-      const country = record.contact.country_code;
-      acc[country] = (acc[country] || 0) + 1;
+      const countryName = record.contact.country?.name || record.contact.country_code || 'Sin país';
+      acc[countryName] = (acc[countryName] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   ).map(([country, count]) => ({

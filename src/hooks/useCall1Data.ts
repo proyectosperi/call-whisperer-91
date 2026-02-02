@@ -40,10 +40,31 @@ export function useCall1Data(courseId?: string) {
     try {
       setIsLoading(true);
       
-      // Primero obtener los registros de call1
+      // Obtener registros con contactos, cursos y países en un solo query usando JOIN
       let query = supabase
         .from('call1_records')
-        .select('*')
+        .select(`
+          id,
+          contact_id,
+          caller_id,
+          status,
+          target_group,
+          observation,
+          called_at,
+          created_at,
+          updated_at,
+          contact:contacts(
+            id,
+            country_code,
+            phone_number,
+            full_phone,
+            source_group,
+            course_id,
+            country_id,
+            course:courses(id, code, name, campaign_start_date),
+            country:countries(id, name, code)
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (!isAdmin) {
@@ -59,19 +80,8 @@ export function useCall1Data(courseId?: string) {
         return;
       }
 
-      // Obtener IDs únicos de contactos y callers
-      const contactIds = [...new Set(recordsData.map(r => r.contact_id))];
-      const callerIds = [...new Set(recordsData.map(r => r.caller_id).filter(Boolean))];
-
-      // Obtener contactos con cursos y países
-      const { data: contacts, error: contactsError } = await supabase
-        .from('contacts')
-        .select('id, country_code, phone_number, full_phone, source_group, course_id, country_id, course:courses(id, code, name, campaign_start_date), country:countries(id, name, code)')
-        .in('id', contactIds);
-
-      if (contactsError) {
-        console.error('Error fetching contacts:', contactsError);
-      }
+      // Extraer IDs únicos de callers para obtener nombres
+      const callerIds = [...new Set(recordsData.map((r: any) => r.caller_id).filter(Boolean))];
 
       // Obtener perfiles de callers
       const { data: callers, error: callersError } = await supabase
@@ -83,18 +93,26 @@ export function useCall1Data(courseId?: string) {
         console.error('Error fetching callers:', callersError);
       }
 
-      // Mapear los datos
-      const contactsMap = new Map((contacts || []).map(c => [c.id, c]));
+      // Mapear callers
       const callersMap = new Map((callers || []).map(p => [p.user_id, p]));
 
-      const enrichedRecords = recordsData.map(record => {
-        const contact = contactsMap.get(record.contact_id);
+      // Enriquecer los registros con datos del caller
+      const enrichedRecords = recordsData.map((record: any) => {
         const caller = record.caller_id ? callersMap.get(record.caller_id) : null;
+        const contact = record.contact;
 
         if (!contact) return null;
 
         return {
-          ...record,
+          id: record.id,
+          contact_id: record.contact_id,
+          caller_id: record.caller_id,
+          status: record.status,
+          target_group: record.target_group,
+          observation: record.observation,
+          called_at: record.called_at,
+          created_at: record.created_at,
+          updated_at: record.updated_at,
           contact: {
             id: contact.id,
             country_code: contact.country_code,
