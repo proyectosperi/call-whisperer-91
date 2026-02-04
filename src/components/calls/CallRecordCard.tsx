@@ -6,7 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Copy, Check, MessageCircle, ChevronDown, Phone } from 'lucide-react';
+import { Copy, Check, MessageCircle, ChevronDown, Phone, Pin, PinOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Call1Status, Call2Status, GroupType } from '@/types/database';
@@ -37,9 +37,11 @@ export interface CallRecordCardProps {
   selected?: boolean;
   onToggleSelect?: () => void;
   showCaller?: boolean;
+  isActive?: boolean;
+  onToggleActive?: () => void;
 }
 
-export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelect, showCaller }: CallRecordCardProps) {
+export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelect, showCaller, isActive, onToggleActive }: CallRecordCardProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -97,7 +99,11 @@ export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelec
   };
 
   return (
-    <Card className={cn("transition-shadow", selected && "ring-2 ring-primary")}>
+    <Card className={cn(
+      "transition-shadow", 
+      selected && "ring-2 ring-primary",
+      isActive && "ring-2 ring-warning bg-warning/5"
+    )}>
       <CardContent className="p-4">
         <div className="flex items-start gap-3">
           {onToggleSelect && (
@@ -111,10 +117,28 @@ export function CallRecordCard({ type, record, onUpdate, selected, onToggleSelec
           <div className="flex-1 min-w-0 space-y-3">
             {/* Phone number and actions */}
             <div className="flex items-center justify-between gap-2">
-              <span className="font-mono text-base font-medium truncate">
-                {record.contact.full_phone}
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                {isActive && (
+                  <Badge variant="outline" className="bg-warning/20 text-warning-foreground border-warning flex-shrink-0">
+                    📌 Activo
+                  </Badge>
+                )}
+                <span className="font-mono text-base font-medium truncate">
+                  {record.contact.full_phone}
+                </span>
+              </div>
               <div className="flex items-center gap-1 flex-shrink-0">
+                {onToggleActive && (
+                  <Button
+                    variant={isActive ? "default" : "ghost"}
+                    size="icon"
+                    className={cn("h-9 w-9", isActive && "bg-warning text-warning-foreground hover:bg-warning/90")}
+                    onClick={onToggleActive}
+                    title={isActive ? "Quitar seguimiento" : "Marcar para seguimiento"}
+                  >
+                    {isActive ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"

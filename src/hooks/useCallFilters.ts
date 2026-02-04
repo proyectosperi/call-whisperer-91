@@ -7,6 +7,7 @@ export interface CallFilters {
   courseFilter: string;
   countryFilter: string;
   callerFilter: string;
+  activePhone: string; // Número activo que se está trabajando
 }
 
 const DEFAULT_FILTERS: CallFilters = {
@@ -15,6 +16,7 @@ const DEFAULT_FILTERS: CallFilters = {
   courseFilter: 'all',
   countryFilter: 'all',
   callerFilter: 'all',
+  activePhone: '',
 };
 
 /**
@@ -32,14 +34,16 @@ export function useCallFilters(storageKey: 'call1' | 'call2') {
     const urlCourse = searchParams.get('course');
     const urlCountry = searchParams.get('country');
     const urlCaller = searchParams.get('caller');
+    const urlActivePhone = searchParams.get('phone');
     
-    if (urlSearch !== null || urlStatus !== null || urlCourse !== null || urlCountry !== null || urlCaller !== null) {
+    if (urlSearch !== null || urlStatus !== null || urlCourse !== null || urlCountry !== null || urlCaller !== null || urlActivePhone !== null) {
       return {
         search: urlSearch || '',
         statusFilter: urlStatus || 'all',
         courseFilter: urlCourse || 'all',
         countryFilter: urlCountry || 'all',
         callerFilter: urlCaller || 'all',
+        activePhone: urlActivePhone || '',
       };
     }
     
@@ -77,6 +81,7 @@ export function useCallFilters(storageKey: 'call1' | 'call2') {
       if (updated.courseFilter !== 'all') params.set('course', updated.courseFilter);
       if (updated.countryFilter !== 'all') params.set('country', updated.countryFilter);
       if (updated.callerFilter !== 'all') params.set('caller', updated.callerFilter);
+      if (updated.activePhone) params.set('phone', updated.activePhone);
       
       setSearchParams(params, { replace: true });
       
@@ -89,9 +94,14 @@ export function useCallFilters(storageKey: 'call1' | 'call2') {
   const setCourseFilter = useCallback((value: string) => updateFilters({ courseFilter: value }), [updateFilters]);
   const setCountryFilter = useCallback((value: string) => updateFilters({ countryFilter: value }), [updateFilters]);
   const setCallerFilter = useCallback((value: string) => updateFilters({ callerFilter: value }), [updateFilters]);
+  const setActivePhone = useCallback((value: string) => updateFilters({ activePhone: value }), [updateFilters]);
   
   const clearFilters = useCallback(() => {
     updateFilters(DEFAULT_FILTERS);
+  }, [updateFilters]);
+  
+  const clearActivePhone = useCallback(() => {
+    updateFilters({ activePhone: '' });
   }, [updateFilters]);
   
   const hasActiveFilters = filters.search !== '' || 
@@ -100,6 +110,8 @@ export function useCallFilters(storageKey: 'call1' | 'call2') {
     filters.countryFilter !== 'all' || 
     filters.callerFilter !== 'all';
   
+  const hasActivePhone = filters.activePhone !== '';
+  
   return {
     ...filters,
     setSearch,
@@ -107,7 +119,10 @@ export function useCallFilters(storageKey: 'call1' | 'call2') {
     setCourseFilter,
     setCountryFilter,
     setCallerFilter,
+    setActivePhone,
     clearFilters,
+    clearActivePhone,
     hasActiveFilters,
+    hasActivePhone,
   };
 }

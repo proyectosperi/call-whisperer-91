@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CallRecordRow } from '@/components/calls/CallRecordRow';
 import { CallRecordCard } from '@/components/calls/CallRecordCard';
+import { ActivePhoneIndicator } from '@/components/calls/ActivePhoneIndicator';
 import { useCall2Data } from '@/hooks/useCall2Data';
 import { useCourses } from '@/hooks/useCourses';
 import { useCallFilters } from '@/hooks/useCallFilters';
@@ -29,16 +30,54 @@ export default function Call2() {
     courseFilter,
     countryFilter,
     callerFilter,
+    activePhone,
     setSearch,
     setStatusFilter,
     setCourseFilter,
     setCountryFilter,
     setCallerFilter,
+    setActivePhone,
     clearFilters,
+    clearActivePhone,
     hasActiveFilters,
+    hasActivePhone,
   } = useCallFilters('call2');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const recordRefs = useRef<Map<string, HTMLElement>>(new Map());
+
+  // Scroll to active phone record when page loads
+  useEffect(() => {
+    if (activePhone && !isLoading) {
+      const activeRecord = records.find(r => r.contact.full_phone === activePhone);
+      if (activeRecord) {
+        const element = recordRefs.current.get(activeRecord.id);
+        if (element) {
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }, 100);
+        }
+      }
+    }
+  }, [activePhone, isLoading, records]);
+
+  const handleToggleActivePhone = (phone: string) => {
+    if (activePhone === phone) {
+      clearActivePhone();
+    } else {
+      setActivePhone(phone);
+    }
+  };
+
+  const scrollToActiveRecord = () => {
+    const activeRecord = records.find(r => r.contact.full_phone === activePhone);
+    if (activeRecord) {
+      const element = recordRefs.current.get(activeRecord.id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
 
   // Extraer países únicos de los registros
   const uniqueCountries = Array.from(
@@ -224,7 +263,7 @@ export default function Call2() {
           </div>
         ) : isMobile ? (
           /* Mobile: Card layout */
-          <div className="space-y-3">
+          <div className="space-y-3 pb-20">
             {isAdmin && (
               <div className="flex items-center gap-2 px-1">
                 <Checkbox
@@ -237,15 +276,23 @@ export default function Call2() {
               </div>
             )}
             {filteredRecords.map((record) => (
-              <CallRecordCard
+              <div
                 key={record.id}
-                type="call2"
-                record={record}
-                onUpdate={updateRecord}
-                selected={selectedIds.includes(record.id)}
-                onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
-                showCaller={isAdmin}
-              />
+                ref={(el) => {
+                  if (el) recordRefs.current.set(record.id, el);
+                }}
+              >
+                <CallRecordCard
+                  type="call2"
+                  record={record}
+                  onUpdate={updateRecord}
+                  selected={selectedIds.includes(record.id)}
+                  onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
+                  showCaller={isAdmin}
+                  isActive={record.contact.full_phone === activePhone}
+                  onToggleActive={() => handleToggleActivePhone(record.contact.full_phone)}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -274,20 +321,38 @@ export default function Call2() {
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map((record) => (
-                    <CallRecordRow
+                    <tr
                       key={record.id}
-                      type="call2"
-                      record={record}
-                      onUpdate={updateRecord}
-                      selected={selectedIds.includes(record.id)}
-                      onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
-                      showCaller={isAdmin}
-                    />
+                      ref={(el) => {
+                        if (el) recordRefs.current.set(record.id, el);
+                      }}
+                      style={{ display: 'contents' }}
+                    >
+                      <CallRecordRow
+                        type="call2"
+                        record={record}
+                        onUpdate={updateRecord}
+                        selected={selectedIds.includes(record.id)}
+                        onToggleSelect={isAdmin ? () => toggleSelect(record.id) : undefined}
+                        showCaller={isAdmin}
+                        isActive={record.contact.full_phone === activePhone}
+                        onToggleActive={() => handleToggleActivePhone(record.contact.full_phone)}
+                      />
+                    </tr>
                   ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
+        )}
+
+        {/* Active Phone Indicator */}
+        {hasActivePhone && (
+          <ActivePhoneIndicator
+            phone={activePhone}
+            onClear={clearActivePhone}
+            onScrollTo={scrollToActiveRecord}
+          />
         )}
 
         {/* Bulk Assign Dialog */}

@@ -5,7 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { TableCell, TableRow } from '@/components/ui/table';
-import { Copy, Check, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, MessageCircle, ChevronDown, ChevronUp, Pin, PinOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Call1Status, Call2Status, GroupType } from '@/types/database';
@@ -36,9 +36,11 @@ export interface CallRecordRowProps {
   selected?: boolean;
   onToggleSelect?: () => void;
   showCaller?: boolean;
+  isActive?: boolean;
+  onToggleActive?: () => void;
 }
 
-export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect, showCaller }: CallRecordRowProps) {
+export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect, showCaller, isActive, onToggleActive }: CallRecordRowProps) {
   const [copied, setCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -91,7 +93,10 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
 
   return (
     <>
-      <TableRow className="hover:bg-muted/50">
+      <TableRow className={cn(
+        "hover:bg-muted/50",
+        isActive && "bg-warning/10 hover:bg-warning/20"
+      )}>
         {onToggleSelect && (
           <TableCell className="w-12">
             <Checkbox checked={selected} onCheckedChange={onToggleSelect} />
@@ -99,6 +104,11 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
         )}
         <TableCell className="font-mono">
           <div className="flex items-center gap-2">
+            {isActive && (
+              <Badge variant="outline" className="bg-warning/20 text-warning-foreground border-warning text-xs">
+                📌
+              </Badge>
+            )}
             <span className="text-sm">{record.contact.full_phone}</span>
             <Button
               variant="ghost"
@@ -147,6 +157,17 @@ export function CallRecordRow({ type, record, onUpdate, selected, onToggleSelect
         )}
         <TableCell>
           <div className="flex items-center gap-1">
+            {onToggleActive && (
+              <Button 
+                variant={isActive ? "default" : "ghost"} 
+                size="icon" 
+                className={cn("h-8 w-8", isActive && "bg-warning text-warning-foreground hover:bg-warning/90")}
+                onClick={onToggleActive}
+                title={isActive ? "Quitar seguimiento" : "Marcar para seguimiento"}
+              >
+                {isActive ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openWhatsApp}>
               <MessageCircle className="h-4 w-4 text-success" />
             </Button>
