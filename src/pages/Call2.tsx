@@ -4,6 +4,7 @@ import { CallRecordRow } from '@/components/calls/CallRecordRow';
 import { CallRecordCard } from '@/components/calls/CallRecordCard';
 import { useCall2Data } from '@/hooks/useCall2Data';
 import { useCourses } from '@/hooks/useCourses';
+import { useCallFilters } from '@/hooks/useCallFilters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from '@/components/ui/input';
@@ -14,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BulkAssignDialog } from '@/components/admin/BulkAssignDialog';
-import { Search, PhoneCall, Users } from 'lucide-react';
+import { Search, PhoneCall, Users, X } from 'lucide-react';
 import { CALL2_STATUS_LABELS, Call2Status } from '@/types/database';
 
 export default function Call2() {
@@ -22,11 +23,20 @@ export default function Call2() {
   const isMobile = useIsMobile();
   const { records, isLoading, updateRecord, refetch } = useCall2Data();
   const { courses } = useCourses();
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [courseFilter, setCourseFilter] = useState<string>('all');
-  const [countryFilter, setCountryFilter] = useState<string>('all');
-  const [callerFilter, setCallerFilter] = useState<string>('all');
+  const {
+    search,
+    statusFilter,
+    courseFilter,
+    countryFilter,
+    callerFilter,
+    setSearch,
+    setStatusFilter,
+    setCourseFilter,
+    setCountryFilter,
+    setCallerFilter,
+    clearFilters,
+    hasActiveFilters,
+  } = useCallFilters('call2');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
 
@@ -124,7 +134,15 @@ export default function Call2() {
         {/* Filters */}
         <Card>
           <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-sm sm:text-base">Filtros</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm sm:text-base">Filtros</CardTitle>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="h-7 px-2 text-xs">
+                  <X className="h-3 w-3 mr-1" />
+                  Limpiar
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">

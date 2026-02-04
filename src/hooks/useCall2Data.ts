@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseDateString } from '@/lib/dateUtils';
@@ -28,14 +28,47 @@ interface Call2WithContact {
   };
 }
 
+// Caché global para mantener datos entre navegaciones
+const dataCache: {
+  records: Call2WithContact[];
+  lastFetch: number;
+  userId: string | null;
+} = {
+  records: [],
+  lastFetch: 0,
+  userId: null,
+};
+
+// Tiempo de caché: 5 minutos
+const CACHE_DURATION = 5 * 60 * 1000;
+
 export function useCall2Data(courseId?: string) {
   const { user, isAdmin } = useAuth();
-  const [records, setRecords] = useState<Call2WithContact[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [records, setRecords] = useState<Call2WithContact[]>(dataCache.records);
+  const [isLoading, setIsLoading] = useState(dataCache.records.length === 0);
   const [error, setError] = useState<Error | null>(null);
+  const isMounted = useRef(true);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (forceRefresh = false) => {
     if (!user) return;
+
+    // Usar caché si es válida y no se fuerza refresh
+    const now = Date.now();
+    const cacheValid = 
+      !forceRefresh &&
+      dataCache.userId === user.id &&
+      dataCache.records.length > 0 &&
+      (now - dataCache.lastFetch) < CACHE_DURATION;
+    
+    if (cacheValid) {
+      let cachedRecords = dataCache.records;
+      if (courseId) {
+        cachedRecords = cachedRecords.filter(r => r.contact.course.id === courseId);
+      }
+      setRecords(cachedRecords);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -74,7 +107,13 @@ export function useCall2Data(courseId?: string) {
       const { data: recordsData, error: recordsError } = await query;
 
       if (recordsError) throw recordsError;
+      
+      if (!isMounted.current) return;
+      
       if (!recordsData || recordsData.length === 0) {
+        dataCache.records = [];
+        dataCache.lastFetch = now;
+        dataCache.userId = user.id;
         setRecords([]);
         setIsLoading(false);
         return;
@@ -92,6 +131,8 @@ export function useCall2Data(courseId?: string) {
       if (callersError) {
         console.error('Error fetching callers:', callersError);
       }
+
+      if (!isMounted.current) return;
 
       // Mapear callers
       const callersMap = new Map((callers || []).map(p => [p.user_id, p]));
@@ -126,14 +167,8 @@ export function useCall2Data(courseId?: string) {
         };
       }).filter(Boolean) as Call2WithContact[];
 
-      // Filtrar por curso si es necesario
-      let finalRecords = enrichedRecords;
-      if (courseId) {
-        finalRecords = enrichedRecords.filter(r => r.contact.course.id === courseId);
-      }
-
       // Ordenar por fecha de inicio del curso (más próximo primero)
-      finalRecords.sort((a, b) => {
+      enrichedRecords.sort((a, b) => {
         const dateA = a.contact.course.campaign_start_date;
         const dateB = b.contact.course.campaign_start_date;
         
@@ -145,17 +180,37 @@ export function useCall2Data(courseId?: string) {
         return parseDateString(dateA).getTime() - parseDateString(dateB).getTime();
       });
 
+      // Guardar en caché
+      dataCache.records = enrichedRecords;
+      dataCache.lastFetch = now;
+      dataCache.userId = user.id;
+
+      // Filtrar por curso si es necesario
+      let finalRecords = enrichedRecords;
+      if (courseId) {
+        finalRecords = enrichedRecords.filter(r => r.contact.course.id === courseId);
+      }
+
       setRecords(finalRecords);
     } catch (err) {
-      setError(err as Error);
-      console.error('Error in fetchData:', err);
+      if (isMounted.current) {
+        setError(err as Error);
+        console.error('Error in fetchData:', err);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   }, [user, isAdmin, courseId]);
 
   useEffect(() => {
+    isMounted.current = true;
     fetchData();
+    
+    return () => {
+      isMounted.current = false;
+    };
   }, [fetchData]);
 
   const updateRecord = async (
@@ -171,8 +226,23 @@ export function useCall2Data(courseId?: string) {
       .eq('id', recordId);
 
     if (error) throw error;
-    await fetchData();
+    
+    // Actualizar el registro localmente sin recargar todo
+    setRecords(prev => prev.map(r => 
+      r.id === recordId 
+        ? { ...r, ...updates, called_at: new Date().toISOString() }
+        : r
+    ));
+    
+    // Actualizar también la caché
+    dataCache.records = dataCache.records.map(r =>
+      r.id === recordId
+        ? { ...r, ...updates, called_at: new Date().toISOString() }
+        : r
+    );
   };
 
-  return { records, isLoading, error, refetch: fetchData, updateRecord };
+  const refetch = useCallback(() => fetchData(true), [fetchData]);
+
+  return { records, isLoading, error, refetch, updateRecord };
 }
