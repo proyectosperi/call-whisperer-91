@@ -29,6 +29,7 @@ import {
   Settings,
   Globe,
   Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 
 const adminNavItems = [
@@ -41,6 +42,7 @@ const adminNavItems = [
   { title: 'Importar', url: '/import', icon: Upload },
   { title: 'Métricas', url: '/metrics', icon: BarChart3 },
   { title: 'Reportes', url: '/call-reports', icon: FileBarChart },
+  { title: 'No Logrados', url: '/call1-report', icon: FileSpreadsheet },
 ];
 
 const callerNavItems = [
