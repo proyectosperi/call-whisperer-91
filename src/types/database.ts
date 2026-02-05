@@ -123,7 +123,7 @@ export const GROUP_LABELS: Record<GroupType, string> = {
 
 export const CALL1_STATUS_COLORS: Record<Call1Status, string> = {
   confirmara: 'bg-warning text-warning-foreground',
-  no_contesta: 'bg-muted text-muted-foreground',
+  no_contesta: 'bg-orange-500 text-white',
   asistira: 'bg-info text-info-foreground',
   no_asistira: 'bg-destructive text-destructive-foreground',
   se_unio: 'bg-success text-success-foreground',
@@ -133,7 +133,7 @@ export const CALL1_STATUS_COLORS: Record<Call1Status, string> = {
 export const CALL2_STATUS_COLORS: Record<Call2Status, string> = {
   matriculado: 'bg-success text-success-foreground',
   no_matriculado: 'bg-destructive text-destructive-foreground',
-  no_contesta: 'bg-muted text-muted-foreground',
+  no_contesta: 'bg-orange-500 text-white',
   confirmara: 'bg-warning text-warning-foreground',
   siguiente_mes: 'bg-info text-info-foreground',
 };
