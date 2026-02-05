@@ -127,7 +127,7 @@ export default function Call1() {
     return matchesSearch && matchesStatus && matchesCourse && matchesCountry && matchesCaller;
   });
 
-  const statusCounts = records.reduce((acc, r) => {
+  const statusCounts = filteredRecords.reduce((acc, r) => {
     acc[r.status] = (acc[r.status] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -149,7 +149,7 @@ export default function Call1() {
             </p>
           </div>
           <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 w-fit">
-            {records.length} registros
+            {filteredRecords.length} registros
           </Badge>
         </div>
 
