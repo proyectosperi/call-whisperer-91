@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Call1 from "./pages/Call1";
 import Call2 from "./pages/Call2";
+import Call1Report from "./pages/Call1Report";
 import Contacts from "./pages/Contacts";
 import Courses from "./pages/Courses";
 import Countries from "./pages/Countries";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/call1" element={<Call1 />} />
             <Route path="/call2" element={<Call2 />} />
+            <Route path="/call1-report" element={<Call1Report />} />
             <Route path="/contacts" element={<Contacts />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/countries" element={<Countries />} />
