@@ -312,12 +312,14 @@ export type Database = {
         | "no_asistira"
         | "se_unio"
         | "no_se_une"
+        | "no_llamado"
       call2_status:
         | "matriculado"
         | "no_matriculado"
         | "no_contesta"
         | "confirmara"
         | "siguiente_mes"
+        | "no_llamado"
       group_type: "G1" | "G2" | "G3" | "G4" | "M1"
     }
     CompositeTypes: {
@@ -454,6 +456,7 @@ export const Constants = {
         "no_asistira",
         "se_unio",
         "no_se_une",
+        "no_llamado",
       ],
       call2_status: [
         "matriculado",
@@ -461,6 +464,7 @@ export const Constants = {
         "no_contesta",
         "confirmara",
         "siguiente_mes",
+        "no_llamado",
       ],
       group_type: ["G1", "G2", "G3", "G4", "M1"],
     },
