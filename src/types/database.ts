@@ -1,8 +1,8 @@
 export type AppRole = 'admin' | 'caller';
 
-export type Call1Status = 'confirmara' | 'no_contesta' | 'asistira' | 'no_asistira' | 'se_unio' | 'no_se_une';
+ export type Call1Status = 'no_llamado' | 'confirmara' | 'no_contesta' | 'asistira' | 'no_asistira' | 'se_unio' | 'no_se_une';
 
-export type Call2Status = 'matriculado' | 'no_matriculado' | 'no_contesta' | 'confirmara' | 'siguiente_mes';
+ export type Call2Status = 'no_llamado' | 'matriculado' | 'no_matriculado' | 'no_contesta' | 'confirmara' | 'siguiente_mes';
 
 export type GroupType = 'G1' | 'G2' | 'G3' | 'G4' | 'M1';
 
@@ -97,6 +97,7 @@ export interface GroupMetric {
 }
 
 export const CALL1_STATUS_LABELS: Record<Call1Status, string> = {
+   no_llamado: 'No Llamado',
   confirmara: 'Confirmará',
   no_contesta: 'No Contesta',
   asistira: 'Asistirá',
@@ -106,6 +107,7 @@ export const CALL1_STATUS_LABELS: Record<Call1Status, string> = {
 };
 
 export const CALL2_STATUS_LABELS: Record<Call2Status, string> = {
+   no_llamado: 'No Llamado',
   matriculado: 'Matriculado',
   no_matriculado: 'No Matriculado',
   no_contesta: 'No Contesta',
@@ -122,6 +124,7 @@ export const GROUP_LABELS: Record<GroupType, string> = {
 };
 
 export const CALL1_STATUS_COLORS: Record<Call1Status, string> = {
+   no_llamado: 'bg-muted text-muted-foreground',
   confirmara: 'bg-warning text-warning-foreground',
   no_contesta: 'bg-orange-500 text-white',
   asistira: 'bg-info text-info-foreground',
@@ -131,6 +134,7 @@ export const CALL1_STATUS_COLORS: Record<Call1Status, string> = {
 };
 
 export const CALL2_STATUS_COLORS: Record<Call2Status, string> = {
+   no_llamado: 'bg-muted text-muted-foreground',
   matriculado: 'bg-success text-success-foreground',
   no_matriculado: 'bg-destructive text-destructive-foreground',
   no_contesta: 'bg-orange-500 text-white',
