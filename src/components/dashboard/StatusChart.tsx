@@ -27,15 +27,15 @@ export function StatusChart({ title, data }: StatusChartProps) {
       <CardHeader>
         <CardTitle className="text-base font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="h-[250px]">
+      <CardContent className="h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={data}
               cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
+              cy="40%"
+              innerRadius={40}
+              outerRadius={65}
               paddingAngle={2}
               dataKey="value"
               nameKey="name"
@@ -47,7 +47,17 @@ export function StatusChart({ title, data }: StatusChartProps) {
             <Tooltip
               formatter={(value: number, name: string) => [`${value} (${((value / total) * 100).toFixed(1)}%)`, name]}
             />
-            <Legend />
+            <Legend 
+              layout="horizontal"
+              align="center"
+              verticalAlign="bottom"
+              wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }}
+              formatter={(value: string, entry: any) => {
+                const item = data.find(d => d.name === value);
+                const percent = item ? ((item.value / total) * 100).toFixed(0) : 0;
+                return `${value} (${percent}%)`;
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </CardContent>
