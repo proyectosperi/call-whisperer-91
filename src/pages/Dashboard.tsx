@@ -91,10 +91,22 @@ export default function Dashboard() {
               />
             )}
             <StatsCard
+              title="Tasa Asistirá"
+              value={`${totalCall1 > 0 ? (((stats?.call1ByStatus.find(s => s.status === 'asistira')?.count || 0) / totalCall1) * 100).toFixed(1) : 0}%`}
+              icon={<TrendingUp className="h-4 w-4" />}
+              description="Confirmaron asistencia"
+            />
+            <StatsCard
               title="Tasa de Unión"
               value={`${totalCall1 > 0 ? (((stats?.call1ByStatus.find(s => s.status === 'se_unio')?.count || 0) / totalCall1) * 100).toFixed(1) : 0}%`}
               icon={<TrendingUp className="h-4 w-4" />}
-              description="Se unieron vs llamados"
+              description="Se unieron al grupo"
+            />
+            <StatsCard
+              title="Tasa Matriculados"
+              value={`${totalCall2 > 0 ? (((stats?.call2ByStatus.find(s => s.status === 'matriculado')?.count || 0) / totalCall2) * 100).toFixed(1) : 0}%`}
+              icon={<TrendingUp className="h-4 w-4" />}
+              description="Se matricularon"
             />
           </div>
         )}
