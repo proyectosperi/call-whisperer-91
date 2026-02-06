@@ -123,7 +123,8 @@ export default function Call1() {
     const matchesStatus = statusFilter === 'all' || record.status === statusFilter;
     const matchesCourse = courseFilter === 'all' || record.contact.course.id === courseFilter;
     const matchesCountry = countryFilter === 'all' || record.contact.country?.id === countryFilter;
-    const matchesCaller = callerFilter === 'all' || record.caller_id === callerFilter;
+    const matchesCaller = callerFilter === 'all' || 
+      (callerFilter === 'unassigned' ? !record.caller_id : record.caller_id === callerFilter);
     return matchesSearch && matchesStatus && matchesCourse && matchesCountry && matchesCaller;
   });
 
@@ -241,6 +242,7 @@ export default function Call1() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="unassigned">Sin asignar</SelectItem>
                       {uniqueCallers.map((caller) => (
                         <SelectItem key={caller.id} value={caller.id}>
                           {caller.name}

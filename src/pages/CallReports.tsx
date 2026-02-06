@@ -345,15 +345,13 @@ export default function CallReports() {
                 </CardHeader>
                 <CardContent>
                   {call1ByCountry.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={350}>
                       <PieChart>
                         <Pie
                           data={call1ByCountry}
                           cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
+                          cy="40%"
+                          outerRadius={90}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -361,11 +359,22 @@ export default function CallReports() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value: number) => [value, 'Números']} />
+                        <Legend 
+                          layout="horizontal" 
+                          verticalAlign="bottom" 
+                          align="center"
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          formatter={(value, entry: any) => {
+                            const item = call1ByCountry.find(c => c.name === value);
+                            const percent = item ? ((item.value / call1Records.length) * 100).toFixed(1) : 0;
+                            return `${value} (${percent}%)`;
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    <div className="h-[350px] flex items-center justify-center text-muted-foreground">
                       No hay datos de países
                     </div>
                   )}
@@ -541,15 +550,13 @@ export default function CallReports() {
                 </CardHeader>
                 <CardContent>
                   {call2ByCountry.length > 0 ? (
-                    <ResponsiveContainer width="100%" height={300}>
+                    <ResponsiveContainer width="100%" height={350}>
                       <PieChart>
                         <Pie
                           data={call2ByCountry}
                           cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
+                          cy="40%"
+                          outerRadius={90}
                           fill="#8884d8"
                           dataKey="value"
                         >
@@ -557,11 +564,22 @@ export default function CallReports() {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip formatter={(value: number) => [value, 'Números']} />
+                        <Legend 
+                          layout="horizontal" 
+                          verticalAlign="bottom" 
+                          align="center"
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          formatter={(value, entry: any) => {
+                            const item = call2ByCountry.find(c => c.name === value);
+                            const percent = item ? ((item.value / call2Records.length) * 100).toFixed(1) : 0;
+                            return `${value} (${percent}%)`;
+                          }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                    <div className="h-[350px] flex items-center justify-center text-muted-foreground">
                       No hay datos de países
                     </div>
                   )}
