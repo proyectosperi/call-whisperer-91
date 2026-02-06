@@ -7,16 +7,23 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Users, Phone, PhoneCall, Globe, TrendingUp } from 'lucide-react';
 import { CALL1_STATUS_LABELS, CALL2_STATUS_LABELS } from '@/types/database';
 
-const STATUS_COLORS = {
+const CALL1_STATUS_COLORS_CHART: Record<string, string> = {
+  no_llamado: 'hsl(220, 13%, 70%)',
   confirmara: 'hsl(38, 92%, 50%)',
-  no_contesta: 'hsl(215, 16%, 47%)',
+  no_contesta: 'hsl(25, 95%, 53%)',
   asistira: 'hsl(199, 89%, 48%)',
   no_asistira: 'hsl(0, 84%, 60%)',
   se_unio: 'hsl(142, 76%, 36%)',
-  no_se_une: 'hsl(0, 63%, 31%)',
+  no_se_une: 'hsl(340, 82%, 52%)',
+};
+
+const CALL2_STATUS_COLORS_CHART: Record<string, string> = {
+  no_llamado: 'hsl(220, 13%, 70%)',
   matriculado: 'hsl(142, 76%, 36%)',
   no_matriculado: 'hsl(0, 84%, 60%)',
-  siguiente_mes: 'hsl(199, 89%, 48%)',
+  no_contesta: 'hsl(25, 95%, 53%)',
+  confirmara: 'hsl(38, 92%, 50%)',
+  siguiente_mes: 'hsl(262, 83%, 58%)',
 };
 
 export default function Dashboard() {
@@ -26,13 +33,13 @@ export default function Dashboard() {
   const call1ChartData = stats?.call1ByStatus.map((item) => ({
     name: CALL1_STATUS_LABELS[item.status],
     value: item.count,
-    color: STATUS_COLORS[item.status] || 'hsl(215, 16%, 47%)',
+    color: CALL1_STATUS_COLORS_CHART[item.status] || 'hsl(215, 16%, 47%)',
   })) || [];
 
   const call2ChartData = stats?.call2ByStatus.map((item) => ({
     name: CALL2_STATUS_LABELS[item.status],
     value: item.count,
-    color: STATUS_COLORS[item.status] || 'hsl(215, 16%, 47%)',
+    color: CALL2_STATUS_COLORS_CHART[item.status] || 'hsl(215, 16%, 47%)',
   })) || [];
 
   const totalCall1 = stats?.call1ByStatus.reduce((acc, item) => acc + item.count, 0) || 0;
