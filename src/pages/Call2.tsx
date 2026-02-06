@@ -16,7 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BulkAssignDialog } from '@/components/admin/BulkAssignDialog';
-import { Search, PhoneCall, Users, X } from 'lucide-react';
+import { Search, PhoneCall, Users, X, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { CALL2_STATUS_LABELS, Call2Status } from '@/types/database';
 
 export default function Call2() {
@@ -116,6 +117,13 @@ export default function Call2() {
     refetch();
   };
 
+  const handleCopyNumbers = () => {
+    const selectedRecords = filteredRecords.filter(r => selectedIds.includes(r.id));
+    const phones = selectedRecords.map(r => r.contact.full_phone).join('\n');
+    navigator.clipboard.writeText(phones);
+    toast.success(`${selectedRecords.length} números copiados al portapapeles`);
+  };
+
   const filteredRecords = records.filter((record) => {
     const matchesSearch =
       record.contact.full_phone.includes(search) ||
@@ -164,10 +172,16 @@ export default function Call2() {
             ))}
           </div>
           {isAdmin && selectedIds.length > 0 && (
-            <Button onClick={() => setShowAssignDialog(true)} size="sm" className="w-full sm:w-auto">
-              <Users className="h-4 w-4 mr-2" />
-              Asignar ({selectedIds.length})
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button onClick={handleCopyNumbers} size="sm" variant="outline" className="flex-1 sm:flex-none">
+                <Copy className="h-4 w-4 mr-2" />
+                Copiar ({selectedIds.length})
+              </Button>
+              <Button onClick={() => setShowAssignDialog(true)} size="sm" className="flex-1 sm:flex-none">
+                <Users className="h-4 w-4 mr-2" />
+                Gestionar ({selectedIds.length})
+              </Button>
+            </div>
           )}
         </div>
 

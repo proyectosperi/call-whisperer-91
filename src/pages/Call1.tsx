@@ -179,7 +179,7 @@ export default function Call1() {
               </Button>
               <Button onClick={() => setShowAssignDialog(true)} size="sm" className="flex-1 sm:flex-none">
                 <Users className="h-4 w-4 mr-2" />
-                Asignar ({selectedIds.length})
+                Gestionar ({selectedIds.length})
               </Button>
             </div>
           )}
