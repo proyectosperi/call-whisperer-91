@@ -22,6 +22,7 @@ interface ContactWithCourse {
   full_phone: string;
   course_id: string;
   source_group?: GroupType;
+  call_type: number;
   created_at: string;
   course: { id: string; code: string; name: string };
 }
@@ -47,6 +48,7 @@ export default function Contacts() {
           full_phone,
           course_id,
           source_group,
+          call_type,
           created_at,
           course:courses(id, code, name)
         `)
@@ -159,6 +161,7 @@ export default function Contacts() {
                     <TableHead>Teléfono</TableHead>
                     <TableHead>País</TableHead>
                     <TableHead>Curso</TableHead>
+                    <TableHead>Llamada</TableHead>
                     <TableHead>Grupo</TableHead>
                     <TableHead>Fecha</TableHead>
                     <TableHead className="w-16">Copiar</TableHead>
@@ -171,6 +174,11 @@ export default function Contacts() {
                       <TableCell>{contact.country_code}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{contact.course.code}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={contact.call_type === 1 ? 'default' : 'secondary'}>
+                          {contact.call_type === 1 ? 'Llamada 1' : 'Llamada 2'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         {contact.source_group ? (

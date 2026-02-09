@@ -47,6 +47,7 @@ export interface Contact {
   country_id?: string;
   course_id: string;
   source_group?: GroupType;
+  call_type: number;
   created_at: string;
   updated_at: string;
   // Joined data

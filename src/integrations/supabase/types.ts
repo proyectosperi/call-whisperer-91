@@ -107,6 +107,7 @@ export type Database = {
       }
       contacts: {
         Row: {
+          call_type: number
           country_code: string
           country_id: string | null
           course_id: string
@@ -118,6 +119,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          call_type?: number
           country_code: string
           country_id?: string | null
           course_id: string
@@ -129,6 +131,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          call_type?: number
           country_code?: string
           country_id?: string | null
           course_id?: string
