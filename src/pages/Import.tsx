@@ -157,6 +157,7 @@ export default function Import() {
           country_id: countryId,
           course_id: singleForm.course_id,
           source_group: singleForm.source_group || null,
+          call_type: singleForm.call_type === 'call1' ? 1 : 2,
         })
         .select()
         .single();
@@ -210,10 +211,12 @@ export default function Import() {
 
     // Obtener contactos existentes para este curso
     addLog('Consultando duplicados existentes...');
+    const callTypeValue = bulkForm.call_type === 'call1' ? 1 : 2;
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('country_code, phone_number')
-      .eq('course_id', bulkForm.course_id);
+      .eq('course_id', bulkForm.course_id)
+      .eq('call_type', callTypeValue);
 
     const existingPhones = new Set(
       (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
@@ -265,6 +268,7 @@ export default function Import() {
             country_id: countryId,
             course_id: bulkForm.course_id,
             source_group: bulkForm.source_group || null,
+            call_type: callTypeValue,
           })
           .select()
           .single();
@@ -425,10 +429,12 @@ export default function Import() {
 
     // Obtener contactos existentes para este curso
     addLog('Verificando duplicados...');
+    const fileCallType = fileForm.call_type === 'call1' ? 1 : 2;
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('country_code, phone_number')
-      .eq('course_id', fileForm.course_id);
+      .eq('course_id', fileForm.course_id)
+      .eq('call_type', fileCallType);
 
     const existingPhones = new Set(
       (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
@@ -457,6 +463,7 @@ export default function Import() {
             country_id: countryId,
             course_id: fileForm.course_id,
             source_group: fileForm.source_group || null,
+            call_type: fileCallType,
           })
           .select()
           .single();
@@ -543,10 +550,12 @@ export default function Import() {
     addLog(`Verificando duplicados en el curso...`);
 
     // Obtener contactos existentes para este curso
+    const htmlCallType = htmlForm.call_type === 'call1' ? 1 : 2;
     const { data: existingContacts } = await supabase
       .from('contacts')
       .select('country_code, phone_number')
-      .eq('course_id', htmlForm.course_id);
+      .eq('course_id', htmlForm.course_id)
+      .eq('call_type', htmlCallType);
 
     const existingPhones = new Set(
       (existingContacts || []).map(c => `${c.country_code}${c.phone_number}`)
@@ -582,6 +591,7 @@ export default function Import() {
             country_id: countryId,
             course_id: htmlForm.course_id,
             source_group: htmlForm.source_group || null,
+            call_type: htmlCallType,
           })
           .select()
           .single();
