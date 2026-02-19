@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { parseDateString } from '@/lib/dateUtils';
-import type { Call1Record, Call1Status, GroupType } from '@/types/database';
+import type { Call1Status, GroupType } from '@/types/database';
 
 interface Call1WithContact {
   id: string;
@@ -42,7 +42,11 @@ const dataCache: {
 // Tiempo de caché: 5 minutos
 const CACHE_DURATION = 5 * 60 * 1000;
 
-export function useCall1Data(courseId?: string) {
+// Evitar múltiples fetches simultáneos
+let isFetching = false;
+const subscribers: Array<(records: Call1WithContact[]) => void> = [];
+
+export function useCall1Data() {
   const { user, isAdmin } = useAuth();
   const [records, setRecords] = useState<Call1WithContact[]>(dataCache.records);
   const [isLoading, setIsLoading] = useState(dataCache.records.length === 0);
@@ -54,26 +58,37 @@ export function useCall1Data(courseId?: string) {
 
     // Usar caché si es válida y no se fuerza refresh
     const now = Date.now();
-    const cacheValid = 
+    const cacheValid =
       !forceRefresh &&
       dataCache.userId === user.id &&
       dataCache.records.length > 0 &&
       (now - dataCache.lastFetch) < CACHE_DURATION;
-    
+
     if (cacheValid) {
-      let cachedRecords = dataCache.records;
-      if (courseId) {
-        cachedRecords = cachedRecords.filter(r => r.contact.course.id === courseId);
-      }
-      setRecords(cachedRecords);
+      setRecords(dataCache.records);
       setIsLoading(false);
       return;
     }
 
+    // Si ya hay un fetch en progreso, suscribirse al resultado
+    if (isFetching && !forceRefresh) {
+      setIsLoading(true);
+      const unsub = (recs: Call1WithContact[]) => {
+        if (isMounted.current) {
+          setRecords(recs);
+          setIsLoading(false);
+        }
+      };
+      subscribers.push(unsub);
+      return;
+    }
+
+    isFetching = true;
+
     try {
       setIsLoading(true);
-      
-      // Obtener TODOS los registros usando paginación para superar el límite de 1000 filas
+
+      // Obtener TODOS los registros usando paginación
       const PAGE_SIZE = 1000;
       let allRecords: any[] = [];
       let page = 0;
@@ -123,25 +138,22 @@ export function useCall1Data(courseId?: string) {
         }
       }
 
-      const recordsData = allRecords;
+      if (!isMounted.current) return;
 
-      if (!isMounted.current) return;
-      
-      if (!isMounted.current) return;
-      
-      if (!recordsData || recordsData.length === 0) {
+      if (!allRecords || allRecords.length === 0) {
         dataCache.records = [];
-        dataCache.lastFetch = now;
+        dataCache.lastFetch = Date.now();
         dataCache.userId = user.id;
         setRecords([]);
         setIsLoading(false);
+        subscribers.forEach(fn => fn([]));
+        subscribers.length = 0;
         return;
       }
 
-      // Extraer IDs únicos de callers para obtener nombres
-      const callerIds = [...new Set(recordsData.map((r: any) => r.caller_id).filter(Boolean))];
+      // Extraer IDs únicos de callers
+      const callerIds = [...new Set(allRecords.map((r: any) => r.caller_id).filter(Boolean))];
 
-      // Obtener perfiles de callers
       const { data: callers, error: callersError } = await supabase
         .from('profiles')
         .select('user_id, full_name')
@@ -153,11 +165,9 @@ export function useCall1Data(courseId?: string) {
 
       if (!isMounted.current) return;
 
-      // Mapear callers
       const callersMap = new Map((callers || []).map(p => [p.user_id, p]));
 
-      // Enriquecer los registros con datos del caller
-      const enrichedRecords = recordsData.map((record: any) => {
+      const enrichedRecords = allRecords.map((record: any) => {
         const caller = record.caller_id ? callersMap.get(record.caller_id) : null;
         const contact = record.contact;
 
@@ -186,47 +196,45 @@ export function useCall1Data(courseId?: string) {
         };
       }).filter(Boolean) as Call1WithContact[];
 
-      // Ordenar por fecha de inicio del curso (más próximo primero)
+      // Ordenar por fecha de inicio del curso
       enrichedRecords.sort((a, b) => {
         const dateA = a.contact.course.campaign_start_date;
         const dateB = b.contact.course.campaign_start_date;
-        
-        // Los que no tienen fecha van al final
         if (!dateA && !dateB) return 0;
         if (!dateA) return 1;
         if (!dateB) return -1;
-        
         return parseDateString(dateA).getTime() - parseDateString(dateB).getTime();
       });
 
       // Guardar en caché
       dataCache.records = enrichedRecords;
-      dataCache.lastFetch = now;
+      dataCache.lastFetch = Date.now();
       dataCache.userId = user.id;
 
-      // Filtrar por curso si es necesario
-      let finalRecords = enrichedRecords;
-      if (courseId) {
-        finalRecords = enrichedRecords.filter(r => r.contact.course.id === courseId);
+      if (isMounted.current) {
+        setRecords(enrichedRecords);
       }
 
-      setRecords(finalRecords);
+      // Notificar a los suscriptores
+      subscribers.forEach(fn => fn(enrichedRecords));
+      subscribers.length = 0;
     } catch (err) {
       if (isMounted.current) {
         setError(err as Error);
         console.error('Error in fetchData:', err);
       }
     } finally {
+      isFetching = false;
       if (isMounted.current) {
         setIsLoading(false);
       }
     }
-  }, [user, isAdmin, courseId]);
+  }, [user, isAdmin]);
 
   useEffect(() => {
     isMounted.current = true;
     fetchData();
-    
+
     return () => {
       isMounted.current = false;
     };
@@ -245,20 +253,15 @@ export function useCall1Data(courseId?: string) {
       .eq('id', recordId);
 
     if (error) throw error;
-    
-    // Actualizar el registro localmente sin recargar todo
-    setRecords(prev => prev.map(r => 
-      r.id === recordId 
-        ? { ...r, ...updates, called_at: new Date().toISOString() }
-        : r
-    ));
-    
-    // Actualizar también la caché
-    dataCache.records = dataCache.records.map(r =>
+
+    // Actualizar localmente sin recargar
+    const updater = (r: Call1WithContact) =>
       r.id === recordId
         ? { ...r, ...updates, called_at: new Date().toISOString() }
-        : r
-    );
+        : r;
+
+    setRecords(prev => prev.map(updater));
+    dataCache.records = dataCache.records.map(updater);
   };
 
   const refetch = useCallback(() => fetchData(true), [fetchData]);
