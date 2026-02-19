@@ -73,40 +73,57 @@ export function useCall2Data(courseId?: string) {
     try {
       setIsLoading(true);
       
-      // Obtener registros con contactos, cursos y países en un solo query usando JOIN
-      let query = supabase
-        .from('call2_records')
-        .select(`
-          id,
-          contact_id,
-          caller_id,
-          status,
-          origin_group,
-          target_group,
-          observation,
-          called_at,
-          created_at,
-          updated_at,
-          contact:contacts(
-            id,
-            country_code,
-            phone_number,
-            full_phone,
-            course_id,
-            country_id,
-            course:courses(id, code, name, campaign_start_date),
-            country:countries(id, name, code)
-          )
-        `)
-        .order('created_at', { ascending: false });
+      // Obtener TODOS los registros usando paginación para superar el límite de 1000 filas
+      const PAGE_SIZE = 1000;
+      let allRecords: any[] = [];
+      let page = 0;
+      let hasMore = true;
 
-      if (!isAdmin) {
-        query = query.eq('caller_id', user.id);
+      while (hasMore) {
+        let query = supabase
+          .from('call2_records')
+          .select(`
+            id,
+            contact_id,
+            caller_id,
+            status,
+            origin_group,
+            target_group,
+            observation,
+            called_at,
+            created_at,
+            updated_at,
+            contact:contacts(
+              id,
+              country_code,
+              phone_number,
+              full_phone,
+              course_id,
+              country_id,
+              course:courses(id, code, name, campaign_start_date),
+              country:countries(id, name, code)
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+        if (!isAdmin) {
+          query = query.eq('caller_id', user.id);
+        }
+
+        const { data: pageData, error: pageError } = await query;
+        if (pageError) throw pageError;
+
+        if (!pageData || pageData.length === 0) {
+          hasMore = false;
+        } else {
+          allRecords = allRecords.concat(pageData);
+          hasMore = pageData.length === PAGE_SIZE;
+          page++;
+        }
       }
 
-      const { data: recordsData, error: recordsError } = await query;
-
-      if (recordsError) throw recordsError;
+      const recordsData = allRecords;
       
       if (!isMounted.current) return;
       

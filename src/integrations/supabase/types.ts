@@ -298,6 +298,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_call1_total_count: { Args: { p_caller_id?: string }; Returns: number }
+      get_call2_total_count: { Args: { p_caller_id?: string }; Returns: number }
+      get_dashboard_stats: { Args: { p_caller_id?: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
