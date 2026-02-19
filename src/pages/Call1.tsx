@@ -4,6 +4,7 @@ import { CallRecordRow } from '@/components/calls/CallRecordRow';
 import { CallRecordCard } from '@/components/calls/CallRecordCard';
 import { ActivePhoneIndicator } from '@/components/calls/ActivePhoneIndicator';
 import { useCall1Data } from '@/hooks/useCall1Data';
+import { useCallTotalCount } from '@/hooks/useCallTotalCount';
 import { useCourses } from '@/hooks/useCourses';
 import { useCallFilters } from '@/hooks/useCallFilters';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +25,7 @@ export default function Call1() {
   const { isAdmin } = useAuth();
   const isMobile = useIsMobile();
   const { records, isLoading, updateRecord, refetch } = useCall1Data();
+  const { totalCount } = useCallTotalCount('call1');
   const { courses } = useCourses();
   const {
     search,
@@ -158,7 +160,7 @@ export default function Call1() {
             </p>
           </div>
           <Badge variant="secondary" className="text-base sm:text-lg px-3 py-1.5 sm:px-4 sm:py-2 w-fit">
-            {filteredRecords.length} registros
+            {hasActiveFilters ? `${filteredRecords.length} filtrados` : `${totalCount ?? records.length} registros`}
           </Badge>
         </div>
 

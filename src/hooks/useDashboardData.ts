@@ -33,104 +33,29 @@ export function useDashboardData() {
       try {
         setIsLoading(true);
 
-        // Total contacts únicos
-        const { data: contactsData } = await supabase
-          .from('contacts')
-          .select('id');
-        const totalContacts = contactsData?.length || 0;
+        // Usar RPC para obtener todos los stats en una sola llamada sin límite de 1000 filas
+        const callerId = isAdmin ? null : user.id;
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('get_dashboard_stats', { p_caller_id: callerId });
 
-        // Contacts by country
-        const { data: countryData } = await supabase
-          .from('contacts')
-          .select('country_code')
-          .then(({ data }) => {
-            const counts: Record<string, number> = {};
-            data?.forEach((c) => {
-              counts[c.country_code] = (counts[c.country_code] || 0) + 1;
-            });
-            return {
-              data: Object.entries(counts).map(([country, count]) => ({ country, count })),
-            };
-          });
+        if (rpcError) throw rpcError;
 
-        // Contacts by group
-        const { data: groupData } = await supabase
-          .from('contacts')
-          .select('source_group')
-          .then(({ data }) => {
-            const counts: Record<string, number> = {};
-            data?.forEach((c) => {
-              if (c.source_group) {
-                counts[c.source_group] = (counts[c.source_group] || 0) + 1;
-              }
-            });
-            return {
-              data: Object.entries(counts).map(([group, count]) => ({
-                group: group as GroupType,
-                count,
-              })),
-            };
-          });
-
-        // Call1 by status
-        let call1Query = supabase.from('call1_records').select('status');
-        if (!isAdmin) {
-          call1Query = call1Query.eq('caller_id', user.id);
-        }
-        const { data: call1Data } = await call1Query.then(({ data }) => {
-          const counts: Record<string, number> = {};
-          data?.forEach((c) => {
-            counts[c.status] = (counts[c.status] || 0) + 1;
-          });
-          return {
-            data: Object.entries(counts).map(([status, count]) => ({
-              status: status as Call1Status,
-              count,
-            })),
-          };
-        });
-
-        // Call2 by status
-        let call2Query = supabase.from('call2_records').select('status');
-        if (!isAdmin) {
-          call2Query = call2Query.eq('caller_id', user.id);
-        }
-        const { data: call2Data } = await call2Query.then(({ data }) => {
-          const counts: Record<string, number> = {};
-          data?.forEach((c) => {
-            counts[c.status] = (counts[c.status] || 0) + 1;
-          });
-          return {
-            data: Object.entries(counts).map(([status, count]) => ({
-              status: status as Call2Status,
-              count,
-            })),
-          };
-        });
-
-        // Contacts by caller (admin only)
-        let callerData: { caller: string; count: number }[] = [];
-        if (isAdmin) {
-          const { data: call1Callers } = await supabase
-            .from('call1_records')
-            .select('caller_id, profiles!call1_records_caller_id_fkey(full_name)')
-            .not('caller_id', 'is', null);
-          
-          const counts: Record<string, number> = {};
-          call1Callers?.forEach((c: any) => {
-            const name = c.profiles?.full_name || 'Sin asignar';
-            counts[name] = (counts[name] || 0) + 1;
-          });
-          callerData = Object.entries(counts).map(([caller, count]) => ({ caller, count }));
-        }
+        const data = rpcData as {
+          total_contacts: number;
+          call1_by_status: { status: Call1Status; count: number }[] | null;
+          call2_by_status: { status: Call2Status; count: number }[] | null;
+          contacts_by_country: { country: string; count: number }[] | null;
+          contacts_by_group: { group: GroupType; count: number }[] | null;
+          contacts_by_caller: { caller: string; count: number }[] | null;
+        };
 
         setStats({
-          totalContacts: totalContacts || 0,
-          contactsByCountry: countryData || [],
-          contactsByGroup: groupData || [],
-          call1ByStatus: call1Data || [],
-          call2ByStatus: call2Data || [],
-          contactsByCaller: callerData,
+          totalContacts: data.total_contacts || 0,
+          contactsByCountry: data.contacts_by_country || [],
+          contactsByGroup: data.contacts_by_group || [],
+          call1ByStatus: data.call1_by_status || [],
+          call2ByStatus: data.call2_by_status || [],
+          contactsByCaller: data.contacts_by_caller || [],
           recentActivity: [],
         });
       } catch (err) {
